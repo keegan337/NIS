@@ -112,3 +112,5 @@ buildNumber.properties
 
 *.der
 *.p12
+!/.idea/Assignment.iml
+/.idea/Assignment.iml

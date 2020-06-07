@@ -1,9 +1,3 @@
-
-import Common.Deliverable;
-import Common.Header;
-import Common.ProtocolUtils;
-
-import javax.swing.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
@@ -14,22 +8,20 @@ import java.util.Scanner;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import static Common.ProtocolUtils.parseHeader;
 
 public class Main {
 	private static int SERVER_PORT = 9000;
 	private static String MACHINE_NAME = "localhost";
-	private static final BlockingDeque<String> sendQueue = new LinkedBlockingDeque();
+	private static final BlockingDeque<String> sendQueue = new LinkedBlockingDeque<>();
 	private static Socket clientSocket = null;
 	private static DataInputStream input;
 	private static DataOutputStream output;
-	public static String username;
 	private static final int ID = (int) (Math.random() * 10);
 	
-	private static Scanner in = new Scanner(System.in);
+	private static final Scanner in = new Scanner(System.in);
 	
 	/**
-	 * @param args leave blank to run as server, otherwise provide ip and port to connect directly
+	 * @param args leave blank to run as server, otherwise provide ip and port to connect directly (1.2.3.4 1234)
 	 */
 	public static void main(String[] args) {
 		System.out.println("UserID = " + ID);
