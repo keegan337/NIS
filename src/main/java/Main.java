@@ -16,7 +16,7 @@ public class Main {
 	private static Socket clientSocket = null;
 	private static DataInputStream input;
 	private static DataOutputStream output;
-	private static final int ID = (int) (Math.random() * 10);
+	private static String ID;
 	
 	private static Object clientCertificate; // MY cert
 	private static Object connectedClientCertificate; // THEIR cert
@@ -27,11 +27,13 @@ public class Main {
 	 */
 	public static void main(String[] args) {
 //		Initial connection setup
-		System.out.println("UserID = " + ID);
 		if (args.length == 0) {
+			ID = "ServerClient";
 			startServer();
 			System.out.println("Connection setup on " + MACHINE_NAME + ":" + SERVER_PORT);
+			System.out.println("UserID = " + ID);
 		} else {
+			ID = "ConnectingClient";
 			MACHINE_NAME = args[0];
 			SERVER_PORT = Integer.parseInt(args[1]);
 			setupConnection();
