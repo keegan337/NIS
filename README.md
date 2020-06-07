@@ -32,4 +32,4 @@ openssl x509 -in uct.der -inform der -text -noout
 Note that we never actually use the .der file because we store all certificates in .p12 files as well.
 
 ### Private key storage
-Private keys are stored in [PKCS12](https://en.wikipedia.org/wiki/PKCS_12) files.
+Private keys are stored in [PKCS12](https://en.wikipedia.org/wiki/PKCS_12) (.p12) files.
