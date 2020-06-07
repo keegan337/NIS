@@ -3,11 +3,11 @@ import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -20,12 +20,19 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.Date;
 
 public class CertificateUtils {
 
 	public static final long millisecondMonth = 1000L * 60 * 60 * 24 * 30;
+
+	public static KeyStore loadKeyStoreFromPKCS12(String fileName, String password) throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException {
+		FileInputStream inputStream = new FileInputStream(fileName);
+		KeyStore store = KeyStore.getInstance("PKCS12");
+		store.load(inputStream, password.toCharArray());
+		inputStream.close();
+		return store;
+	}
 
 	/**
 	 * Save a given certificate to a file for later use
@@ -57,15 +64,12 @@ public class CertificateUtils {
 	 * @throws NoSuchAlgorithmException
 	 * @throws CertificateException
 	 */
-	public static void saverPkToFile(KeyPair kp, X509CertificateHolder certHolder, String storeKeyAlias, String storeKeyPassword, String filename, String storePassword) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
+	public static void saveToPKCS12(KeyPair kp, X509CertificateHolder certHolder, Certificate[] certificateChain, String storeKeyAlias, String storeKeyPassword, String filename, String storePassword) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
 		KeyStore store = KeyStore.getInstance("PKCS12");
 		store.load(null, null); //create empty keystore
 
-		X509Certificate cert = new JcaX509CertificateConverter().getCertificate(certHolder);
-		Certificate[] certChain = new Certificate[]{cert};
-
 		//Here we specify the password for the key
-		store.setKeyEntry(storeKeyAlias, kp.getPrivate(), storeKeyPassword.toCharArray(), certChain);
+		store.setKeyEntry(storeKeyAlias, kp.getPrivate(), storeKeyPassword.toCharArray(), certificateChain);
 
 		FileOutputStream fileOutputStream = new FileOutputStream(filename);
 		store.store(fileOutputStream, storePassword.toCharArray()); //Here we specify the password for the keystore
@@ -124,8 +128,6 @@ public class CertificateUtils {
 	 * @throws NoSuchAlgorithmException
 	 */
 	public static KeyPair generateKeyPair() throws NoSuchAlgorithmException {
-		System.out.println("generating key pair");
-
 		KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
 		keyGen.initialize(4096);
 		return keyGen.generateKeyPair();
