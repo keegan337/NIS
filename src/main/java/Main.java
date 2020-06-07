@@ -18,12 +18,15 @@ public class Main {
 	private static DataOutputStream output;
 	private static final int ID = (int) (Math.random() * 10);
 	
+	private static Object clientCertificate; // MY cert
+	private static Object connectedClientCertificate; // THEIR cert
 	private static final Scanner in = new Scanner(System.in);
 	
 	/**
 	 * @param args leave blank to run as server, otherwise provide ip and port to connect directly (1.2.3.4 1234)
 	 */
 	public static void main(String[] args) {
+//		Initial connection setup
 		System.out.println("UserID = " + ID);
 		if (args.length == 0) {
 			startServer();
@@ -36,15 +39,62 @@ public class Main {
 		}
 		System.out.println("Setting up IO streams");
 		setupIOStreams();
-		createThreads();
 		
-		System.out.println("Threads created, you may type your messages:");
+//		Perform certificate verification
+		System.out.println("Sending certificate");
+		ensureCertificateExists();
+		sendCertificate(clientCertificate);
+		connectedClientCertificate = receiveCertificate();
+		validateCertificate(connectedClientCertificate);
+		
+//		Create threads to allow free flow of messages in both directions
+		createThreads();
+		System.out.println("Threads created");
+		
+		
+		
 		String inputLine = in.nextLine();
 		
 		while (!inputLine.equals("EXIT")) {
 			sendQueue.add(inputLine);
 			inputLine = in.nextLine();
 		}
+	}
+	
+	/**
+	 * Check for certificate file and generate one if it does not exist.
+	 * Assign to clientCertificate
+	 */
+	private static void ensureCertificateExists() {
+		//todo
+		Object cert = null;
+		clientCertificate = cert;
+	}
+	
+	/**
+	 * Hash the certificate using (algorithm) and compare with the CA signed certificate hash. Use local CA PubKey Copy
+	 * @param cert received from connected client
+	 */
+	private static void validateCertificate(Object cert) {
+		//TODO
+		
+	}
+	
+	/**
+	 * Receive the connected client's certificate over the network.
+	 * @return
+	 */
+	private static Object receiveCertificate() {
+		//TODO
+		return new Object();
+	}
+	
+	/**
+	 * Send clients certificate over the network to the connected client
+	 * @param cert to be sent.
+	 */
+	private static void sendCertificate(Object cert) {
+		//TODO
 	}
 	
 	/**
@@ -109,6 +159,7 @@ public class Main {
 		{
 			while (true) {
 				try {
+//					TODO Jared: Change this to whatever format needs to be sent
 					String received = input.readUTF();
 					System.out.println("Received:");
 					System.out.println(received);
@@ -129,6 +180,8 @@ public class Main {
 		{
 			while (true) {
 				try {
+//					TODO Jared: Change this to whatever format needs to be received
+					
 					String message = sendQueue.take(); // take a message out of the queue if there is one available
 					output.writeUTF(message);
 					
