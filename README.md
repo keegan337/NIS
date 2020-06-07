@@ -7,6 +7,16 @@
 
 ## Notes
 
+### Certificate Verification
+A certificate can be verified as follows:
+```java
+X509Certificate caCertificate = ...
+X509Certificate untrustedCertificate = ...
+untrustedCertificate.verify(caCertificate.getPublicKey());
+``` 
+
+The ```verify()``` method will throw an error if the verification fails or return (void) if the verification succeeds.
+
 ### Libraries
 JDK14 version of [Bouncy Castle](https://www.bouncycastle.org/) 1.51
 
