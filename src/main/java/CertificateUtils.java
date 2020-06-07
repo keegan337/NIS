@@ -41,7 +41,7 @@ public class CertificateUtils {
 	 * @param fileName   to store certificate as (eg: uct.der for CA)
 	 * @throws IOException
 	 */
-	public static void saveCertToFile(X509CertificateHolder certHolder, String fileName) throws IOException {
+	public static void saveCertToDER(X509CertificateHolder certHolder, String fileName) throws IOException {
 		FileOutputStream fileOutputStream = new FileOutputStream(fileName);
 		fileOutputStream.write(certHolder.getEncoded());
 		fileOutputStream.flush();

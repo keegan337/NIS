@@ -26,7 +26,7 @@ public class GenerateCertificateAuthorityCert {
 		X509CertificateHolder certHolder = CertificateUtils.getX509CertificateHolder(kp.getPrivate(), kp.getPublic(), name, name);
 
 		System.out.println("saving certificate to file");
-		CertificateUtils.saveCertToFile(certHolder, "uct.der");
+		CertificateUtils.saveCertToDER(certHolder, "uct.der");
 
 		System.out.println("saving private key to file");
 		X509Certificate cert = new JcaX509CertificateConverter().getCertificate(certHolder);
