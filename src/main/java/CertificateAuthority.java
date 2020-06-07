@@ -35,6 +35,13 @@ public class CertificateAuthority {
 		return caCertHolder;
 	}
 
+	/**
+	 * Fulfils a certificate signing request from a client.
+	 * @param subjectPublicKey
+	 * @param subjectName
+	 * @return
+	 * @throws OperatorCreationException
+	 */
 	public X509CertificateHolder getSignedClientCertificate(PublicKey subjectPublicKey, X500Name subjectName) throws OperatorCreationException {
 		return CertificateUtils.getX509CertificateHolder(caPrivateKey, subjectPublicKey, caCertHolder.getSubject(), subjectName);
 	}
