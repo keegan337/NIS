@@ -1,20 +1,17 @@
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.EOFException;
-import java.io.IOException;
+import org.bouncycastle.openpgp.PGPException;
+import org.bouncycastle.openpgp.PGPPublicKey;
+import org.bouncycastle.openpgp.operator.jcajce.JcaPGPKeyConverter;
+
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.InvalidKeyException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
-import java.security.SignatureException;
-import java.security.UnrecoverableKeyException;
+import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.Scanner;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -42,6 +39,8 @@ public class Main {
 	 */
 	public static void main(String[] args) throws CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, InvalidKeyException, NoSuchProviderException, SignatureException {
 
+
+
 		String username = "alice";
 		String password = "123";
 
@@ -50,6 +49,32 @@ public class Main {
 		clientCertificate = (X509Certificate) certChain[0];
 		caCertificate = (X509Certificate) certChain[1];
 		clientPrivateKey = (PrivateKey) store.getKey(username, password.toCharArray());
+
+		String x = "Hello!";
+		//byte[] y = x.getBytes();
+		BufferedWriter f = new BufferedWriter(new FileWriter("testinput.txt"));
+		f.write(x);
+		f.close();
+
+		FileOutputStream fis = null;
+		fis = new FileOutputStream("testoutput.txt");
+		Date t = new GregorianCalendar(2014, Calendar.FEBRUARY, 11).getTime();
+		JcaPGPKeyConverter converter = new JcaPGPKeyConverter();
+
+		PGPPublicKey clientPGPPublicKey = null;
+		PublicKey clientPublicKey = clientCertificate.getPublicKey();
+
+//		try {
+//			clientPGPPublicKey = converter.getPGPPublicKey(2, clientPublicKey, t);
+//		} catch (PGPException e) {
+//			e.printStackTrace();
+//		}
+
+		try {
+			PGPUitl.encryptFile(fis, "testinput.txt", (PGPPublicKey)clientPublicKey);
+		} catch (PGPException e) {
+			e.printStackTrace();
+		}
 
 //		Initial connection setup
 		if (args.length == 0) {

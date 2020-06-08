@@ -1,12 +1,8 @@
-import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.security.NoSuchProviderException;
+import java.security.SecureRandom;
+import java.security.Security;
 import java.util.Iterator;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.security.PrivateKey;
 import java.security.cert.CertificateEncodingException;
@@ -17,17 +13,15 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-import org.bouncycastle.openpgp.PGPCompressedDataGenerator;
-import org.bouncycastle.openpgp.PGPException;
-import org.bouncycastle.openpgp.PGPLiteralData;
-import org.bouncycastle.openpgp.PGPPrivateKey;
-import org.bouncycastle.openpgp.PGPPublicKey;
-import org.bouncycastle.openpgp.PGPPublicKeyRing;
-import org.bouncycastle.openpgp.PGPPublicKeyRingCollection;
-import org.bouncycastle.openpgp.PGPSecretKey;
-import org.bouncycastle.openpgp.PGPSecretKeyRing;
-import org.bouncycastle.openpgp.PGPSecretKeyRingCollection;
-import org.bouncycastle.openpgp.PGPUtil;
+import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
+import org.bouncycastle.crypto.InvalidCipherTextException;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openpgp.*;
+import org.bouncycastle.openpgp.jcajce.JcaPGPObjectFactory;
+import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
+import org.bouncycastle.openpgp.operator.bc.BcPGPDataEncryptorBuilder;
+import org.bouncycastle.openpgp.operator.bc.BcPublicKeyDataDecryptorFactory;
+import org.bouncycastle.openpgp.operator.bc.BcPublicKeyKeyEncryptionMethodGenerator;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyDecryptorBuilder;
 import org.bouncycastle.asn1.ASN1InputStream;
@@ -60,133 +54,6 @@ import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
 import org.bouncycastle.util.Store;
 
 public class PGPUitl {
-    static byte[] compressFile(String fileName, int algorithm) throws IOException
-    {
-        ByteArrayOutputStream bOut = new ByteArrayOutputStream();
-        PGPCompressedDataGenerator comData = new PGPCompressedDataGenerator(algorithm);
-        PGPUtil.writeFileToLiteralData(comData.open(bOut), PGPLiteralData.BINARY,
-                new File(fileName));
-        comData.close();
-        return bOut.toByteArray();
-    }
-
-    /**
-     * Search a secret key ring collection for a secret key corresponding to keyID if it
-     * exists.
-     *
-     * @param pgpSec a secret key ring collection.
-     * @param keyID keyID we want.
-     * @param pass passphrase to decrypt secret key with.
-     * @return the private key.
-     * @throws PGPException
-     * @throws NoSuchProviderException
-     */
-    static PGPPrivateKey findSecretKey(PGPSecretKeyRingCollection pgpSec, long keyID, char[] pass)
-            throws PGPException, NoSuchProviderException
-    {
-        PGPSecretKey pgpSecKey = pgpSec.getSecretKey(keyID);
-
-        if (pgpSecKey == null)
-        {
-            return null;
-        }
-
-        return pgpSecKey.extractPrivateKey(new JcePBESecretKeyDecryptorBuilder().setProvider("BC").build(pass));
-    }
-
-    static PGPPublicKey readPublicKey(String fileName) throws IOException, PGPException
-    {
-        InputStream keyIn = new BufferedInputStream(new FileInputStream(fileName));
-        PGPPublicKey pubKey = readPublicKey(keyIn);
-        keyIn.close();
-        return pubKey;
-    }
-
-    /**
-     * A simple routine that opens a key ring file and loads the first available key
-     * suitable for encryption.
-     *
-     * @param input data stream containing the public key data
-     * @return the first public key found.
-     * @throws IOException
-     * @throws PGPException
-     */
-    static PGPPublicKey readPublicKey(InputStream input) throws IOException, PGPException
-    {
-        PGPPublicKeyRingCollection pgpPub = new PGPPublicKeyRingCollection(
-                PGPUtil.getDecoderStream(input), new JcaKeyFingerprintCalculator());
-
-        //
-        // we just loop through the collection till we find a key suitable for encryption, in the real
-        // world you would probably want to be a bit smarter about this.
-        //
-
-        Iterator keyRingIter = pgpPub.getKeyRings();
-        while (keyRingIter.hasNext())
-        {
-            PGPPublicKeyRing keyRing = (PGPPublicKeyRing)keyRingIter.next();
-
-            Iterator keyIter = keyRing.getPublicKeys();
-            while (keyIter.hasNext())
-            {
-                PGPPublicKey key = (PGPPublicKey)keyIter.next();
-
-                if (key.isEncryptionKey())
-                {
-                    return key;
-                }
-            }
-        }
-
-        throw new IllegalArgumentException("Can't find encryption key in key ring.");
-    }
-
-    static PGPSecretKey readSecretKey(String fileName) throws IOException, PGPException
-    {
-        InputStream keyIn = new BufferedInputStream(new FileInputStream(fileName));
-        PGPSecretKey secKey = readSecretKey(keyIn);
-        keyIn.close();
-        return secKey;
-    }
-
-    /**
-     * A simple routine that opens a key ring file and loads the first available key
-     * suitable for signature generation.
-     *
-     * @param input stream to read the secret key ring collection from.
-     * @return a secret key.
-     * @throws IOException on a problem with using the input stream.
-     * @throws PGPException if there is an issue parsing the input stream.
-     */
-    static PGPSecretKey readSecretKey(InputStream input) throws IOException, PGPException
-    {
-        PGPSecretKeyRingCollection pgpSec = new PGPSecretKeyRingCollection(
-                PGPUtil.getDecoderStream(input), new JcaKeyFingerprintCalculator());
-
-        //
-        // we just loop through the collection till we find a key suitable for encryption, in the real
-        // world you would probably want to be a bit smarter about this.
-        //
-
-        Iterator keyRingIter = pgpSec.getKeyRings();
-        while (keyRingIter.hasNext())
-        {
-            PGPSecretKeyRing keyRing = (PGPSecretKeyRing)keyRingIter.next();
-
-            Iterator keyIter = keyRing.getSecretKeys();
-            while (keyIter.hasNext())
-            {
-                PGPSecretKey key = (PGPSecretKey)keyIter.next();
-
-                if (key.isSigningKey())
-                {
-                    return key;
-                }
-            }
-        }
-
-        throw new IllegalArgumentException("Can't find signing key in key ring.");
-    }
 
     public static byte[] signData(byte[] data, final X509Certificate signingCertificate, final PrivateKey signingKey) throws CertificateEncodingException, OperatorCreationException, CMSException, IOException {
         byte[] signedMessage = null;
@@ -223,29 +90,98 @@ public class PGPUitl {
         return true;
     }
 
-    public static byte[] encryptData(final byte[] data, X509Certificate encryptionCertificate) throws CertificateEncodingException, CMSException, IOException {
-        byte[] encryptedData = null;
-        if (null != data && null != encryptionCertificate) {
-            CMSEnvelopedDataGenerator cmsEnvelopedDataGenerator = new CMSEnvelopedDataGenerator();
-            JceKeyTransRecipientInfoGenerator jceKey = new JceKeyTransRecipientInfoGenerator(encryptionCertificate);
-            cmsEnvelopedDataGenerator.addRecipientInfoGenerator(jceKey);
-            CMSTypedData msg = new CMSProcessableByteArray(data);
-            OutputEncryptor encryptor = new JceCMSContentEncryptorBuilder(CMSAlgorithm.AES128_CBC).setProvider("BC").build();
-            CMSEnvelopedData cmsEnvelopedData = cmsEnvelopedDataGenerator.generate(msg, encryptor);
-            encryptedData = cmsEnvelopedData.getEncoded();
-        }
-        return encryptedData;
+    public static void encryptFile(OutputStream out, String fileName, PGPPublicKey encKey) throws IOException, NoSuchProviderException, PGPException {
+        //Adds a new Security Provider
+        Security.addProvider(new BouncyCastleProvider());
+
+        //This implements an output stream in which the data is written into a byte array
+        ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+
+        //Construct a new compressed data generator with the ZIP algorithm
+        PGPCompressedDataGenerator comData = new PGPCompressedDataGenerator(PGPCompressedData.ZIP);
+
+        //Read a file and write its contents as a literal data packet to the compressed data generator stream
+        PGPUtil.writeFileToLiteralData(comData.open(bOut), PGPLiteralData.BINARY, new File(fileName));
+
+        comData.close();
+
+        //Contructs a PGPEncryptedDataGenerator Object to encrypt raw data
+        PGPEncryptedDataGenerator cPk = new PGPEncryptedDataGenerator(new BcPGPDataEncryptorBuilder(SymmetricKeyAlgorithmTags.TRIPLE_DES).setSecureRandom(new SecureRandom()));
+
+        //Adds the encryption method, which is the public key sent to this method in this instance
+        cPk.addMethod(new BcPublicKeyKeyEncryptionMethodGenerator(encKey));
+
+        byte[] bytes = bOut.toByteArray();
+
+        //Create an OutputStream based on the output stream sent to this method and the length of variable bytes,
+        // and write a single encrypted object of known length to the output stream
+
+        OutputStream cOut = cPk.open(out, bytes.length);
+
+        cOut.write(bytes);
+
+        cOut.close();
+
+        out.close();
     }
 
-    public static byte[] decryptData(final byte[] encryptedData, final PrivateKey decryptionKey) throws CMSException {
-        byte[] decryptedData = null;
-        if (null != encryptedData && null != decryptionKey) {
-            CMSEnvelopedData envelopedData = new CMSEnvelopedData(encryptedData);
-            Collection<RecipientInformation> recip = envelopedData.getRecipientInfos().getRecipients();
-            KeyTransRecipientInformation recipientInfo = (KeyTransRecipientInformation) recip.iterator().next();
-            JceKeyTransRecipient recipient = new JceKeyTransEnvelopedRecipient(decryptionKey);
-            decryptedData = recipientInfo.getContent(recipient);
-        }
-        return decryptedData;
-    }
+//    public void decryptFile(InputStream in, PGPSecretKey secKey, char[] pass) throws IOException, PGPException, InvalidCipherTextException {
+//        Security.addProvider(new BouncyCastleProvider());
+//
+//        in = PGPUtil.getDecoderStream(in);
+//
+//        JcaPGPObjectFactory pgpFact;
+//
+//
+//        PGPObjectFactory pgpF = new PGPObjectFactory(in, new BcKeyFingerprintCalculator());
+//
+//        Object o = pgpF.nextObject();
+//        PGPEncryptedDataList encList;
+//
+//        if (o instanceof PGPEncryptedDataList) {
+//
+//            encList = (PGPEncryptedDataList) o;
+//
+//        } else {
+//
+//            encList = (PGPEncryptedDataList) pgpF.nextObject();
+//
+//        }
+//
+//        Iterator<PGPPublicKeyEncryptedData> itt = encList.getEncryptedDataObjects();
+//        PGPPrivateKey sKey = null;
+//        PGPPublicKeyEncryptedData encP = null;
+//        while (sKey == null && itt.hasNext()) {
+//            encP = itt.next();
+//            secKey = readSecretKeyFromCol(new FileInputStream("PrivateKey.asc"), encP.getKeyID());
+//            sKey = secKey.extractPrivateKey(new BcPBESecretKeyDecryptorBuilder(new BcPGPDigestCalculatorProvider()).build(pass));
+//        }
+//        if (sKey == null) {
+//            throw new IllegalArgumentException("Secret key for message not found.");
+//        }
+//
+//        InputStream clear = encP.getDataStream(new BcPublicKeyDataDecryptorFactory(sKey));
+//
+//        pgpFact = new JcaPGPObjectFactory(clear);
+//
+//        PGPCompressedData c1 = (PGPCompressedData) pgpFact.nextObject();
+//
+//        pgpFact = new JcaPGPObjectFactory(c1.getDataStream());
+//
+//        PGPLiteralData ld = (PGPLiteralData) pgpFact.nextObject();
+//        ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+//
+//        InputStream inLd = ld.getDataStream();
+//
+//        int ch;
+//        while ((ch = inLd.read()) >= 0) {
+//            bOut.write(ch);
+//        }
+//
+//        //System.out.println(bOut.toString());
+//
+//        bOut.writeTo(new FileOutputStream(ld.getFileName()));
+//        //return bOut;
+//
+//    }
 }
