@@ -55,4 +55,33 @@ public class GenerateClientCert {
 		Certificate[] certChain = new Certificate[]{clientCert, caCert};
 		CertificateUtils.saveToPKCS12(kp, certHolder, certChain, username, password, username + ".p12", password);
 	}
+
+	/**
+	 * Generates a client certificate and saves it as a file
+	 * @param username the username of the client
+	 * @param password the client's password
+	 * @throws UnrecoverableKeyException
+	 * @throws CertificateException
+	 * @throws NoSuchAlgorithmException
+	 * @throws KeyStoreException
+	 * @throws IOException
+	 * @throws OperatorCreationException
+	 */
+	public static void generateClientCert(String username, String password) throws UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, OperatorCreationException {
+		CertificateAuthority ca = new CertificateAuthority();
+		X500NameBuilder nameBuilder = new X500NameBuilder();
+
+		// generate key pair
+		KeyPair kp = CertificateUtils.generateKeyPair();
+
+		// generate signed certificate
+		X509CertificateHolder certHolder = ca.getSignedClientCertificate(kp.getPublic(), nameBuilder.build());
+
+		// save cert and keys to file
+		JcaX509CertificateConverter converter = new JcaX509CertificateConverter();
+		X509Certificate caCert = converter.getCertificate(ca.getCaCertHolder());
+		X509Certificate clientCert = converter.getCertificate(certHolder);
+		Certificate[] certChain = new Certificate[]{clientCert, caCert};
+		CertificateUtils.saveToPKCS12(kp, certHolder, certChain, username, password, username + ".p12", password);
+	}
 }

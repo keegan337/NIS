@@ -19,8 +19,9 @@ public class CertificateAuthority {
 	private X509CertificateHolder caCertHolder;
 	private PrivateKey caPrivateKey;
 
-	public CertificateAuthority() throws IOException, CertificateException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException {
+	public CertificateAuthority() throws IOException, CertificateException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, OperatorCreationException {
 		//Load keystore from PKCS12 file
+		GenerateCertificateAuthorityCert.generateCertificateAuthorityCert();
 		KeyStore store = CertificateUtils.loadKeyStoreFromPKCS12("uct.p12", "123");
 
 		//Get private key from keystore
