@@ -1,4 +1,6 @@
+import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.openpgp.PGPException;
+import org.bouncycastle.openpgp.PGPPrivateKey;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPKeyConverter;
 
@@ -51,7 +53,6 @@ public class Main {
 		clientPrivateKey = (PrivateKey) store.getKey(username, password.toCharArray());
 
 		String x = "Hello!";
-		//byte[] y = x.getBytes();
 		BufferedWriter f = new BufferedWriter(new FileWriter("testinput.txt"));
 		f.write(x);
 		f.close();
@@ -63,8 +64,7 @@ public class Main {
 		PGPPublicKey clientPGPPublicKey = null;
 		PublicKey clientPublicKey = clientCertificate.getPublicKey();
 
-
-
+		//Need to check which algorithm is correct
 		try {
 			clientPGPPublicKey = converter.getPGPPublicKey(2, clientPublicKey, t);
 		} catch (PGPException e) {
@@ -74,6 +74,25 @@ public class Main {
 		try {
 			PGPUitl.encryptFile(fis, "testinput.txt", clientPGPPublicKey);
 		} catch (PGPException e) {
+			e.printStackTrace();
+		}
+
+		//decrypt the data that was just written to "testoutput.txt"
+		FileInputStream inputTesterStream = null;
+		inputTesterStream = new FileInputStream("testoutput.txt");
+
+		PGPPrivateKey clientPGPPrivateKey = null;
+		try {
+			clientPGPPrivateKey = converter.getPGPPrivateKey(clientPGPPublicKey, clientPrivateKey);
+		} catch (PGPException e) {
+			e.printStackTrace();
+		}
+
+		try {
+			PGPUitl.decryptFile(inputTesterStream, clientPGPPrivateKey);
+		} catch (PGPException e) {
+			e.printStackTrace();
+		} catch (InvalidCipherTextException e) {
 			e.printStackTrace();
 		}
 

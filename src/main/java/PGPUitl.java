@@ -18,10 +18,7 @@ import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.*;
 import org.bouncycastle.openpgp.jcajce.JcaPGPObjectFactory;
-import org.bouncycastle.openpgp.operator.bc.BcKeyFingerprintCalculator;
-import org.bouncycastle.openpgp.operator.bc.BcPGPDataEncryptorBuilder;
-import org.bouncycastle.openpgp.operator.bc.BcPublicKeyDataDecryptorFactory;
-import org.bouncycastle.openpgp.operator.bc.BcPublicKeyKeyEncryptionMethodGenerator;
+import org.bouncycastle.openpgp.operator.bc.*;
 import org.bouncycastle.openpgp.operator.jcajce.JcaKeyFingerprintCalculator;
 import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyDecryptorBuilder;
 import org.bouncycastle.asn1.ASN1InputStream;
@@ -125,63 +122,61 @@ public class PGPUitl {
         out.close();
     }
 
-//    public void decryptFile(InputStream in, PGPSecretKey secKey, char[] pass) throws IOException, PGPException, InvalidCipherTextException {
-//        Security.addProvider(new BouncyCastleProvider());
-//
-//        in = PGPUtil.getDecoderStream(in);
-//
-//        JcaPGPObjectFactory pgpFact;
-//
-//
-//        PGPObjectFactory pgpF = new PGPObjectFactory(in, new BcKeyFingerprintCalculator());
-//
-//        Object o = pgpF.nextObject();
-//        PGPEncryptedDataList encList;
-//
-//        if (o instanceof PGPEncryptedDataList) {
-//
-//            encList = (PGPEncryptedDataList) o;
-//
-//        } else {
-//
-//            encList = (PGPEncryptedDataList) pgpF.nextObject();
-//
-//        }
-//
-//        Iterator<PGPPublicKeyEncryptedData> itt = encList.getEncryptedDataObjects();
-//        PGPPrivateKey sKey = null;
-//        PGPPublicKeyEncryptedData encP = null;
-//        while (sKey == null && itt.hasNext()) {
-//            encP = itt.next();
-//            secKey = readSecretKeyFromCol(new FileInputStream("PrivateKey.asc"), encP.getKeyID());
-//            sKey = secKey.extractPrivateKey(new BcPBESecretKeyDecryptorBuilder(new BcPGPDigestCalculatorProvider()).build(pass));
-//        }
-//        if (sKey == null) {
-//            throw new IllegalArgumentException("Secret key for message not found.");
-//        }
-//
-//        InputStream clear = encP.getDataStream(new BcPublicKeyDataDecryptorFactory(sKey));
-//
-//        pgpFact = new JcaPGPObjectFactory(clear);
-//
-//        PGPCompressedData c1 = (PGPCompressedData) pgpFact.nextObject();
-//
-//        pgpFact = new JcaPGPObjectFactory(c1.getDataStream());
-//
-//        PGPLiteralData ld = (PGPLiteralData) pgpFact.nextObject();
-//        ByteArrayOutputStream bOut = new ByteArrayOutputStream();
-//
-//        InputStream inLd = ld.getDataStream();
-//
-//        int ch;
-//        while ((ch = inLd.read()) >= 0) {
-//            bOut.write(ch);
-//        }
-//
-//        //System.out.println(bOut.toString());
-//
-//        bOut.writeTo(new FileOutputStream(ld.getFileName()));
-//        //return bOut;
-//
-//    }
+    public static void decryptFile(InputStream in, PGPPrivateKey pKey) throws IOException, PGPException, InvalidCipherTextException {
+        Security.addProvider(new BouncyCastleProvider());
+
+        //Obtains a stream that can be used to read PGP data from the provided stream
+        in = PGPUtil.getDecoderStream(in);
+
+        JcaPGPObjectFactory pgpFact;
+
+        //Create an object factory suitable for reading PGP objects
+        PGPObjectFactory pgpF = new PGPObjectFactory(in, new BcKeyFingerprintCalculator());
+
+        //Return the next object in the stream, or null if the end of stream is reached
+        Object o = pgpF.nextObject();
+
+        PGPEncryptedDataList encList;
+
+        // The first object might be a PGP marker packet
+        if (o instanceof PGPEncryptedDataList) {
+
+            encList = (PGPEncryptedDataList) o;
+
+        } else {
+
+            encList = (PGPEncryptedDataList) pgpF.nextObject();
+
+        }
+
+        Iterator<PGPPublicKeyEncryptedData> itt = encList.getEncryptedDataObjects();
+        PGPPublicKeyEncryptedData encP = null;
+        while (itt.hasNext()) {
+            encP = itt.next();
+        }
+
+        InputStream clear = encP.getDataStream(new BcPublicKeyDataDecryptorFactory(pKey));
+
+        pgpFact = new JcaPGPObjectFactory(clear);
+
+        PGPCompressedData c1 = (PGPCompressedData) pgpFact.nextObject();
+
+        pgpFact = new JcaPGPObjectFactory(c1.getDataStream());
+
+        PGPLiteralData ld = (PGPLiteralData) pgpFact.nextObject();
+        ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+
+        InputStream inLd = ld.getDataStream();
+
+        int ch;
+        while ((ch = inLd.read()) >= 0) {
+            bOut.write(ch);
+        }
+
+        System.out.println("THE ENCRYPTED MESSAGE FROM THE ALIENS IS: " + bOut.toString());
+
+        bOut.writeTo(new FileOutputStream(ld.getFileName()));
+        //return bOut;
+
+    }
 }
