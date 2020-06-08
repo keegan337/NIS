@@ -60,18 +60,19 @@ public class Main {
 		fis = new FileOutputStream("testoutput.txt");
 		Date t = new GregorianCalendar(2014, Calendar.FEBRUARY, 11).getTime();
 		JcaPGPKeyConverter converter = new JcaPGPKeyConverter();
-
 		PGPPublicKey clientPGPPublicKey = null;
 		PublicKey clientPublicKey = clientCertificate.getPublicKey();
 
-//		try {
-//			clientPGPPublicKey = converter.getPGPPublicKey(2, clientPublicKey, t);
-//		} catch (PGPException e) {
-//			e.printStackTrace();
-//		}
+
 
 		try {
-			PGPUitl.encryptFile(fis, "testinput.txt", (PGPPublicKey)clientPublicKey);
+			clientPGPPublicKey = converter.getPGPPublicKey(2, clientPublicKey, t);
+		} catch (PGPException e) {
+			e.printStackTrace();
+		}
+
+		try {
+			PGPUitl.encryptFile(fis, "testinput.txt", clientPGPPublicKey);
 		} catch (PGPException e) {
 			e.printStackTrace();
 		}
