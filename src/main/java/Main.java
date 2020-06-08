@@ -3,17 +3,9 @@ import org.bouncycastle.operator.OperatorCreationException;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.InvalidKeyException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
-import java.security.SignatureException;
-import java.security.UnrecoverableKeyException;
+import java.security.*;
+import java.security.cert.*;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.Scanner;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -70,11 +62,11 @@ public class Main {
 
 //		Perform certificate verification
         System.out.println("Sending certificate");
-
         sendCertificate(clientCertificate);
-        connectedClientCertificate = receiveCertificate();
+        System.out.println("Receiving certificate");
+        connectedClientCertificate = receiveCertificate(input.readInt());
         validateCertificate(connectedClientCertificate);
-
+        System.out.println("Certificate authenticated");
 //		Create threads to allow free flow of messages in both directions
         createThreads();
         System.out.println("Threads created");
@@ -105,18 +97,34 @@ public class Main {
      * @param cert received from connected client
      */
     private static void validateCertificate(X509Certificate cert) {
-        //TODO
 
+        try {
+            cert.verify(caCertificate.getPublicKey());
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (InvalidKeyException e) {
+            System.out.println("Invalid Key");
+            sendQueue.add("Invalid Key"); //TODO Luc
+        } catch (NoSuchProviderException e) {
+            e.printStackTrace();
+        } catch (SignatureException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
      * Receive the connected client's certificate over the network.
-     *
-     * @return
+     * @param numBytes the length of the certificate to be received
+     * @return the connected client's certificate
      */
-    private static X509Certificate receiveCertificate() {
-        //TODO
-        return null;
+    private static X509Certificate receiveCertificate(int numBytes) throws IOException, CertificateException {
+        byte[] certAsBytes = new byte[numBytes];
+        int bytesRead = input.read(certAsBytes, 0, numBytes);
+        //System.out.println("Number of bytes read: " + bytesRead);
+        X509Certificate cert = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(certAsBytes));
+        return cert;
     }
 
     /**
@@ -124,8 +132,11 @@ public class Main {
      *
      * @param cert to be sent.
      */
-    private static void sendCertificate(Object cert) {
-        //TODO
+    private static void sendCertificate(X509Certificate cert) throws CertificateEncodingException, IOException {
+        byte[] frame = cert.getEncoded();
+        output.writeInt(frame.length);
+        //System.out.println("Length of certificate: " + frame.length);
+        output.write(frame);
     }
 
     /**
