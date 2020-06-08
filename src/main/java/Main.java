@@ -4,6 +4,17 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.InvalidKeyException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.SignatureException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.Scanner;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -17,15 +28,29 @@ public class Main {
 	private static DataInputStream input;
 	private static DataOutputStream output;
 	private static String ID;
-	
-	private static Object clientCertificate; // MY cert
-	private static Object connectedClientCertificate; // THEIR cert
+
+	private static X509Certificate caCertificate; //CA cert
+	private static X509Certificate clientCertificate; // MY cert
+	private static X509Certificate connectedClientCertificate; // THEIR cert
+
+	private static PrivateKey clientPrivateKey; //MY private key
+
 	private static final Scanner in = new Scanner(System.in);
 	
 	/**
 	 * @param args leave blank to run as server, otherwise provide ip and port to connect directly (1.2.3.4 1234)
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, InvalidKeyException, NoSuchProviderException, SignatureException {
+
+		String username = "alice";
+		String password = "123";
+
+		KeyStore store = CertificateUtils.loadKeyStoreFromPKCS12(username + ".p12", password);
+		Certificate[] certChain = store.getCertificateChain(username);
+		clientCertificate = (X509Certificate) certChain[0];
+		caCertificate = (X509Certificate) certChain[1];
+		clientPrivateKey = (PrivateKey) store.getKey(username, password.toCharArray());
+
 //		Initial connection setup
 		if (args.length == 0) {
 			ID = "ServerClient";
@@ -69,7 +94,7 @@ public class Main {
 	 */
 	private static void ensureCertificateExists() {
 		//todo
-		Object cert = null;
+		X509Certificate cert = null;
 		clientCertificate = cert;
 	}
 	
@@ -86,9 +111,9 @@ public class Main {
 	 * Receive the connected client's certificate over the network.
 	 * @return
 	 */
-	private static Object receiveCertificate() {
+	private static X509Certificate receiveCertificate() {
 		//TODO
-		return new Object();
+		return null;
 	}
 	
 	/**
