@@ -21,7 +21,7 @@ public class CertificateAuthority {
 
 	public CertificateAuthority() throws IOException, CertificateException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, OperatorCreationException {
 		//Load keystore from PKCS12 file
-		GenerateCertificateAuthorityCert.generateCertificateAuthorityCert();
+		//GenerateCertificateAuthorityCert.generateCertificateAuthorityCert(); //we can't do this because it would overwrite our CA certificate every time we run it so our verification stuff would stop working (because we overwrote the CA certificate that signed the client certificates)
 		KeyStore store = CertificateUtils.loadKeyStoreFromPKCS12("uct.p12", "123");
 
 		//Get private key from keystore
