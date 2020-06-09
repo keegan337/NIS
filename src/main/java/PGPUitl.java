@@ -92,91 +92,94 @@ public class PGPUitl {
         Security.addProvider(new BouncyCastleProvider());
 
         //This implements an output stream in which the data is written into a byte array
-        ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+        ByteArrayOutputStream byteStreamOut = new ByteArrayOutputStream();
 
         //Construct a new compressed data generator with the ZIP algorithm
-        PGPCompressedDataGenerator comData = new PGPCompressedDataGenerator(PGPCompressedData.ZIP);
+        PGPCompressedDataGenerator compressedDataGenerator = new PGPCompressedDataGenerator(PGPCompressedData.ZIP);
 
         //Read a file and write its contents as a literal data packet to the compressed data generator stream
-        PGPUtil.writeFileToLiteralData(comData.open(bOut), PGPLiteralData.BINARY, new File(fileName));
+        PGPUtil.writeFileToLiteralData(compressedDataGenerator.open(byteStreamOut), PGPLiteralData.BINARY, new File(fileName));
 
-        comData.close();
+        compressedDataGenerator.close();
 
-        //Contructs a PGPEncryptedDataGenerator Object to encrypt raw data
-        PGPEncryptedDataGenerator cPk = new PGPEncryptedDataGenerator(new BcPGPDataEncryptorBuilder(SymmetricKeyAlgorithmTags.TRIPLE_DES).setSecureRandom(new SecureRandom()));
+        //Constructs a PGPEncryptedDataGenerator Object to encrypt raw data
+        PGPEncryptedDataGenerator encryptedDataGenerator = new PGPEncryptedDataGenerator(new BcPGPDataEncryptorBuilder(SymmetricKeyAlgorithmTags.TRIPLE_DES).setSecureRandom(new SecureRandom()));
 
         //Adds the encryption method, which is the public key sent to this method in this instance
-        cPk.addMethod(new BcPublicKeyKeyEncryptionMethodGenerator(encKey));
+        encryptedDataGenerator.addMethod(new BcPublicKeyKeyEncryptionMethodGenerator(encKey));
 
-        byte[] bytes = bOut.toByteArray();
+        byte[] bytes = byteStreamOut.toByteArray();
 
         //Create an OutputStream based on the output stream sent to this method and the length of variable bytes,
         // and write a single encrypted object of known length to the output stream
 
-        OutputStream cOut = cPk.open(out, bytes.length);
+        //Create a new output stream which is created based on the configured method of public key encryption, to create a new encrypted object, based on the length of the byte stream
+        OutputStream encryptedCompressedOutputstream = encryptedDataGenerator.open(out, bytes.length);
 
-        cOut.write(bytes);
+        encryptedCompressedOutputstream.write(bytes);
 
-        cOut.close();
+        encryptedCompressedOutputstream.close();
 
         out.close();
     }
 
-    public static void decryptFile(InputStream in, PGPPrivateKey pKey) throws IOException, PGPException, InvalidCipherTextException {
+    public static ByteArrayOutputStream decryptFile(InputStream in, PGPPrivateKey pgpPrivateKey) throws IOException, PGPException, InvalidCipherTextException {
         Security.addProvider(new BouncyCastleProvider());
 
         //Obtains a stream that can be used to read PGP data from the provided stream
         in = PGPUtil.getDecoderStream(in);
 
-        JcaPGPObjectFactory pgpFact;
+        JcaPGPObjectFactory jcaPGPFactory;
 
         //Create an object factory suitable for reading PGP objects
-        PGPObjectFactory pgpF = new PGPObjectFactory(in, new BcKeyFingerprintCalculator());
+        PGPObjectFactory pgpObjectFactory = new PGPObjectFactory(in, new BcKeyFingerprintCalculator());
 
         //Return the next object in the stream, or null if the end of stream is reached
-        Object o = pgpF.nextObject();
+        Object pgpObject = pgpObjectFactory.nextObject();
 
-        PGPEncryptedDataList encList;
+        PGPEncryptedDataList pgpEncryptedDataList;
 
         // The first object might be a PGP marker packet
-        if (o instanceof PGPEncryptedDataList) {
+        if (pgpObject instanceof PGPEncryptedDataList) {
 
-            encList = (PGPEncryptedDataList) o;
+            pgpEncryptedDataList = (PGPEncryptedDataList) pgpObject;
 
         } else {
 
-            encList = (PGPEncryptedDataList) pgpF.nextObject();
+            pgpEncryptedDataList = (PGPEncryptedDataList) pgpObjectFactory.nextObject();
 
         }
 
-        Iterator<PGPPublicKeyEncryptedData> itt = encList.getEncryptedDataObjects();
-        PGPPublicKeyEncryptedData encP = null;
-        while (itt.hasNext()) {
-            encP = itt.next();
+        Iterator<PGPPublicKeyEncryptedData> iterator = pgpEncryptedDataList.getEncryptedDataObjects();
+        PGPPublicKeyEncryptedData publicKeyEncryptedDataObject = null;
+        while (iterator.hasNext()) {
+            publicKeyEncryptedDataObject = iterator.next();
         }
 
-        InputStream clear = encP.getDataStream(new BcPublicKeyDataDecryptorFactory(pKey));
+        InputStream decryptedDataInputStream = publicKeyEncryptedDataObject.getDataStream(new BcPublicKeyDataDecryptorFactory(pgpPrivateKey));
 
-        pgpFact = new JcaPGPObjectFactory(clear);
+        jcaPGPFactory = new JcaPGPObjectFactory(decryptedDataInputStream);
 
-        PGPCompressedData c1 = (PGPCompressedData) pgpFact.nextObject();
+        PGPCompressedData pgpCompressedData = (PGPCompressedData) jcaPGPFactory.nextObject();
 
-        pgpFact = new JcaPGPObjectFactory(c1.getDataStream());
+        //Construct a JcaPGPObjectFactory object with an input stream that decompresses and returns data in the compressed packet
+        jcaPGPFactory = new JcaPGPObjectFactory(pgpCompressedData.getDataStream());
 
-        PGPLiteralData ld = (PGPLiteralData) pgpFact.nextObject();
-        ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+        PGPLiteralData literalData = (PGPLiteralData) jcaPGPFactory.nextObject();
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 
-        InputStream inLd = ld.getDataStream();
+        //Return the input stream representing the data stream
+        InputStream dataStream = literalData.getDataStream();
 
-        int ch;
-        while ((ch = inLd.read()) >= 0) {
-            bOut.write(ch);
+        int dataByte;
+        while ((dataByte = dataStream.read()) >= 0) {
+            byteArrayOutputStream.write(dataByte);
         }
 
-        System.out.println("THE ENCRYPTED MESSAGE FROM THE ALIENS IS: " + bOut.toString());
+        System.out.println("THE ENCRYPTED MESSAGE FROM THE ALIENS IS: " + byteArrayOutputStream.toString());
 
-        bOut.writeTo(new FileOutputStream(ld.getFileName()));
-        //return bOut;
+        byteArrayOutputStream.writeTo(new FileOutputStream(literalData.getFileName()));
+        return byteArrayOutputStream;
 
     }
 }
