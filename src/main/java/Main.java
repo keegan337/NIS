@@ -1,8 +1,10 @@
+import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPrivateKey;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.bouncycastle.openpgp.operator.jcajce.JcaPGPKeyConverter;
+import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -52,7 +54,27 @@ public class Main {
 		caCertificate = (X509Certificate) certChain[1];
 		clientPrivateKey = (PrivateKey) store.getKey(username, password.toCharArray());
 
+		String bobUsername = "bob";
+		String bobPassword = "123";
+
+		KeyStore bobStore = CertificateUtils.loadKeyStoreFromPKCS12(username + ".p12", password);
+		Certificate[] bobCertChain = store.getCertificateChain(username);
+		X509Certificate bobClientCertificate = (X509Certificate) bobCertChain[0];
+		caCertificate = (X509Certificate) bobCertChain[1];
+		PrivateKey bobClientPrivateKey = (PrivateKey) bobStore.getKey(username, password.toCharArray());
+
+		byte [] signedMessage = null;
+
+
 		String x = "Hello!";
+		try {
+			signedMessage = PGPUitl.signData(x.getBytes(), clientCertificate, clientPrivateKey);
+		} catch (OperatorCreationException e) {
+			e.printStackTrace();
+		} catch (CMSException e) {
+			e.printStackTrace();
+		}
+
 		BufferedWriter f = new BufferedWriter(new FileWriter("testinput.txt"));
 		f.write(x);
 		f.close();
@@ -61,18 +83,18 @@ public class Main {
 		fis = new FileOutputStream("testoutput.txt");
 		Date t = new GregorianCalendar(2014, Calendar.FEBRUARY, 11).getTime();
 		JcaPGPKeyConverter converter = new JcaPGPKeyConverter();
-		PGPPublicKey clientPGPPublicKey = null;
-		PublicKey clientPublicKey = clientCertificate.getPublicKey();
+		PGPPublicKey bobClientPGPPublicKey = null;
+		PublicKey bobClientPublicKey = bobClientCertificate.getPublicKey();
 
 		//Need to check which algorithm is correct
 		try {
-			clientPGPPublicKey = converter.getPGPPublicKey(PGPPublicKey.RSA_ENCRYPT, clientPublicKey, t);
+			bobClientPGPPublicKey = converter.getPGPPublicKey(PGPPublicKey.RSA_ENCRYPT, bobClientPublicKey, t);
 		} catch (PGPException e) {
 			e.printStackTrace();
 		}
 
 		try {
-			PGPUitl.encryptFile(fis, "testinput.txt", clientPGPPublicKey);
+			PGPUitl.encryptFile(fis, signedMessage, bobClientPGPPublicKey);
 		} catch (PGPException e) {
 			e.printStackTrace();
 		}
@@ -81,18 +103,28 @@ public class Main {
 		FileInputStream inputTesterStream = null;
 		inputTesterStream = new FileInputStream("testoutput.txt");
 
-		PGPPrivateKey clientPGPPrivateKey = null;
+		PGPPrivateKey bobClientPGPPrivateKey = null;
 		try {
-			clientPGPPrivateKey = converter.getPGPPrivateKey(clientPGPPublicKey, clientPrivateKey);
+			bobClientPGPPrivateKey = converter.getPGPPrivateKey(bobClientPGPPublicKey, bobClientPrivateKey);
 		} catch (PGPException e) {
 			e.printStackTrace();
 		}
 
+		byte[] signedDecryptedMessage = null;
+
 		try {
-			PGPUitl.decryptFile(inputTesterStream, clientPGPPrivateKey);
+			signedDecryptedMessage = PGPUitl.decryptFile(inputTesterStream, bobClientPGPPrivateKey);
 		} catch (PGPException e) {
 			e.printStackTrace();
 		} catch (InvalidCipherTextException e) {
+			e.printStackTrace();
+		}
+
+		try {
+			System.out.println(PGPUitl.verifSignData(signedDecryptedMessage));
+		} catch (CMSException e) {
+			e.printStackTrace();
+		} catch (OperatorCreationException e) {
 			e.printStackTrace();
 		}
 

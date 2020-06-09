@@ -2,16 +2,13 @@ import java.io.*;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.security.Security;
-import java.util.Iterator;
+import java.util.*;
 import java.io.IOException;
 import java.security.PrivateKey;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 
 import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
 import org.bouncycastle.crypto.InvalidCipherTextException;
@@ -49,10 +46,12 @@ import org.bouncycastle.operator.OutputEncryptor;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
 import org.bouncycastle.util.Store;
+import org.bouncycastle.util.io.Streams;
 
 public class PGPUitl {
 
-    public static byte[] signData(byte[] data, final X509Certificate signingCertificate, final PrivateKey signingKey) throws CertificateEncodingException, OperatorCreationException, CMSException, IOException {
+    public static byte[] signData(byte[] data, final X509Certificate signingCertificate, PrivateKey signingKey) throws CertificateEncodingException, OperatorCreationException, CMSException, IOException {
+        Security.addProvider(new BouncyCastleProvider());
         byte[] signedMessage = null;
 
         //Creating a list of X509Certificate objects
@@ -66,6 +65,7 @@ public class PGPUitl {
         //Creating a new store from the certificate list
         Store certificateStore = new JcaCertStore(certificateList);
 
+        //Creating an object that will be used to generate a CMSSignedData object
         CMSSignedDataGenerator cmsSignedDataGenerator = new CMSSignedDataGenerator();
 
         ContentSigner contentSigner = new JcaContentSignerBuilder("SHA256withRSA").build(signingKey);
@@ -74,6 +74,7 @@ public class PGPUitl {
 
         cmsSignedDataGenerator.addCertificates(certificateStore);
 
+        //Create the CMSSignedData object from the cmsData
         CMSSignedData cms = cmsSignedDataGenerator.generate(cmsData, true);
 
         signedMessage = cms.getEncoded();
@@ -82,37 +83,57 @@ public class PGPUitl {
     }
 
     public static boolean verifSignData(final byte[] signedData) throws CMSException, IOException, OperatorCreationException, CertificateException {
-        ByteArrayInputStream bIn = new ByteArrayInputStream(signedData);
-        ASN1InputStream aIn = new ASN1InputStream(bIn);
-        CMSSignedData s = new CMSSignedData(ContentInfo.getInstance(aIn.readObject()));
-        aIn.close();
-        bIn.close();
-        Store certs = s.getCertificates();
-        SignerInformationStore signers = s.getSignerInfos();
-        Collection<SignerInformation> c = signers.getSigners();
-        SignerInformation signer = c.iterator().next();
-        Collection<X509CertificateHolder> certCollection = certs.getMatches(signer.getSID());
-        Iterator<X509CertificateHolder> certIt = certCollection.iterator();
-        X509CertificateHolder certHolder = certIt.next();
-        boolean verifResult = signer.verify(new JcaSimpleSignerInfoVerifierBuilder().build(certHolder));
-        if (!verifResult) {
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(signedData);
+
+        ASN1InputStream asn1InputStream = new ASN1InputStream(byteArrayInputStream);
+
+        CMSSignedData cmsSignedData = new CMSSignedData(ContentInfo.getInstance(asn1InputStream.readObject()));
+
+        asn1InputStream.close();
+
+        byteArrayInputStream.close();
+
+        //Return any X.509 certificate objects in this SignedData structure as a Store of X509CertificateHolder objects
+        Store certificates = cmsSignedData.getCertificates();
+
+        //Return the collection of signers that are associated with the signatures for the message
+        SignerInformationStore signers = cmsSignedData.getSignerInfos();
+
+        Collection<SignerInformation> signerInformationCollection = signers.getSigners();
+
+        SignerInformation signer = signerInformationCollection.iterator().next();
+
+        Collection<X509CertificateHolder> certificateHolders = certificates.getMatches(signer.getSID());
+
+        Iterator<X509CertificateHolder> certificateHolderIterator = certificateHolders.iterator();
+
+        X509CertificateHolder certificateHolder = certificateHolderIterator.next();
+
+        boolean verifiedResult = signer.verify(new JcaSimpleSignerInfoVerifierBuilder().build(certificateHolder));
+
+        if (!verifiedResult) {
             return false;
         }
+
         return true;
     }
 
-    public static void encryptFile(OutputStream out, String fileName, PGPPublicKey encKey) throws IOException, NoSuchProviderException, PGPException {
+    public static void encryptFile(OutputStream out, byte[] inputByteArray, PGPPublicKey encKey) throws IOException, NoSuchProviderException, PGPException {
         //Adds a new Security Provider
         Security.addProvider(new BouncyCastleProvider());
 
+        ByteArrayInputStream in = new ByteArrayInputStream(inputByteArray);
         //This implements an output stream in which the data is written into a byte array
         ByteArrayOutputStream byteStreamOut = new ByteArrayOutputStream();
+        PGPLiteralDataGenerator literalDataGenerator = new PGPLiteralDataGenerator();
 
         //Construct a new compressed data generator with the ZIP algorithm
         PGPCompressedDataGenerator compressedDataGenerator = new PGPCompressedDataGenerator(PGPCompressedData.ZIP);
 
+        OutputStream outputStream = literalDataGenerator.open(compressedDataGenerator.open(byteStreamOut), PGPLiteralData.BINARY, "filename", in.available(), new Date());
+        Streams.pipeAll(in, outputStream);
         //Read a file and write its contents as a literal data packet to the compressed data generator stream
-        PGPUtil.writeFileToLiteralData(compressedDataGenerator.open(byteStreamOut), PGPLiteralData.BINARY, new File(fileName));
+        //PGPUtil.writeFileToLiteralData(compressedDataGenerator.open(byteStreamOut), PGPLiteralData.BINARY, new File(fileName));
 
         compressedDataGenerator.close();
 
@@ -137,7 +158,7 @@ public class PGPUitl {
         out.close();
     }
 
-    public static ByteArrayOutputStream decryptFile(InputStream in, PGPPrivateKey pgpPrivateKey) throws IOException, PGPException, InvalidCipherTextException {
+    public static byte[] decryptFile(InputStream in, PGPPrivateKey pgpPrivateKey) throws IOException, PGPException, InvalidCipherTextException {
         Security.addProvider(new BouncyCastleProvider());
 
         //Obtains a stream that can be used to read PGP data from the provided stream
@@ -190,10 +211,10 @@ public class PGPUitl {
             byteArrayOutputStream.write(dataByte);
         }
 
-        System.out.println("THE ENCRYPTED MESSAGE FROM THE ALIENS IS: " + byteArrayOutputStream.toString());
+        //System.out.println("THE ENCRYPTED MESSAGE FROM THE ALIENS IS: " + byteArrayOutputStream.toString());
 
-        byteArrayOutputStream.writeTo(new FileOutputStream(literalData.getFileName()));
-        return byteArrayOutputStream;
+        //byteArrayOutputStream.writeTo(new FileOutputStream(literalData.getFileName()));
+        return byteArrayOutputStream.toByteArray();
 
     }
 }
