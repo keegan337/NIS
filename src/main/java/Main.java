@@ -66,7 +66,7 @@ public class Main {
 
 		//Need to check which algorithm is correct
 		try {
-			clientPGPPublicKey = converter.getPGPPublicKey(2, clientPublicKey, t);
+			clientPGPPublicKey = converter.getPGPPublicKey(PGPPublicKey.RSA_ENCRYPT, clientPublicKey, t);
 		} catch (PGPException e) {
 			e.printStackTrace();
 		}
