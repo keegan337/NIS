@@ -11,6 +11,7 @@ import java.security.cert.X509Certificate;
 import java.util.Iterator;
 
 import org.bouncycastle.bcpg.SymmetricKeyAlgorithmTags;
+import org.bouncycastle.cms.*;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.*;
@@ -22,18 +23,6 @@ import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.cms.ContentInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaCertStore;
-import org.bouncycastle.cms.CMSAlgorithm;
-import org.bouncycastle.cms.CMSEnvelopedData;
-import org.bouncycastle.cms.CMSEnvelopedDataGenerator;
-import org.bouncycastle.cms.CMSException;
-import org.bouncycastle.cms.CMSProcessableByteArray;
-import org.bouncycastle.cms.CMSSignedData;
-import org.bouncycastle.cms.CMSSignedDataGenerator;
-import org.bouncycastle.cms.CMSTypedData;
-import org.bouncycastle.cms.KeyTransRecipientInformation;
-import org.bouncycastle.cms.RecipientInformation;
-import org.bouncycastle.cms.SignerInformation;
-import org.bouncycastle.cms.SignerInformationStore;
 import org.bouncycastle.cms.jcajce.JcaSignerInfoGeneratorBuilder;
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
 import org.bouncycastle.cms.jcajce.JceCMSContentEncryptorBuilder;
@@ -111,10 +100,14 @@ public class PGPUitl {
 
         boolean verifiedResult = signer.verify(new JcaSimpleSignerInfoVerifierBuilder().build(certificateHolder));
 
+        CMSTypedData cmsProcessable = cmsSignedData.getSignedContent();
+
         if (!verifiedResult) {
             return false;
         }
 
+        String message = new String((byte[])cmsProcessable.getContent());
+        System.out.println(message);
         return true;
     }
 
