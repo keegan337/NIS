@@ -95,15 +95,15 @@ public class PGPUitl {
         ByteArrayOutputStream bOut = new ByteArrayOutputStream();
 
         //Construct a new compressed data generator with the ZIP algorithm
-        PGPCompressedDataGenerator comData = new PGPCompressedDataGenerator(PGPCompressedData.ZIP);
+        PGPCompressedDataGenerator compressedData = new PGPCompressedDataGenerator(PGPCompressedData.ZIP);
 
         //Read a file and write its contents as a literal data packet to the compressed data generator stream
-        PGPUtil.writeFileToLiteralData(comData.open(bOut), PGPLiteralData.BINARY, new File(fileName));
+        PGPUtil.writeFileToLiteralData(compressedData.open(bOut), PGPLiteralData.BINARY, new File(fileName));
 
-        comData.close();
+        compressedData.close();
 
         //Contructs a PGPEncryptedDataGenerator Object to encrypt raw data
-        PGPEncryptedDataGenerator cPk = new PGPEncryptedDataGenerator(new BcPGPDataEncryptorBuilder(SymmetricKeyAlgorithmTags.TRIPLE_DES).setSecureRandom(new SecureRandom()));
+        PGPEncryptedDataGenerator cPk = new PGPEncryptedDataGenerator(new BcPGPDataEncryptorBuilder(SymmetricKeyAlgorithmTags.AES_256).setSecureRandom(new SecureRandom()));
 
         //Adds the encryption method, which is the public key sent to this method in this instance
         cPk.addMethod(new BcPublicKeyKeyEncryptionMethodGenerator(encKey));
