@@ -64,7 +64,7 @@ public class Main {
         System.out.println("Sending certificate");
         sendCertificate(clientCertificate);
         System.out.println("Receiving certificate");
-        connectedClientCertificate = receiveCertificate(input.readInt());
+        connectedClientCertificate = receiveCertificate();
         validateCertificate(connectedClientCertificate);
         System.out.println("Certificate authenticated");
 //		Create threads to allow free flow of messages in both directions
@@ -116,10 +116,10 @@ public class Main {
 
     /**
      * Receive the connected client's certificate over the network.
-     * @param numBytes the length of the certificate to be received
      * @return the connected client's certificate
      */
-    private static X509Certificate receiveCertificate(int numBytes) throws IOException, CertificateException {
+    private static X509Certificate receiveCertificate() throws IOException, CertificateException {
+        int numBytes = input.readInt();
         byte[] certAsBytes = new byte[numBytes];
         int bytesRead = input.read(certAsBytes, 0, numBytes);
         //System.out.println("Number of bytes read: " + bytesRead);
