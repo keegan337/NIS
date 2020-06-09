@@ -32,7 +32,8 @@ public class Main {
      * @param args leave blank to run as server, otherwise provide ip and port to connect directly (1.2.3.4 1234)
      */
     public static void main(String[] args) throws CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, InvalidKeyException, NoSuchProviderException, SignatureException, OperatorCreationException {
-
+        
+        //TODO: Allow username/password commandline arguments
         String username = "alice";
         String password = "123";
 
@@ -66,6 +67,7 @@ public class Main {
         System.out.println("Receiving certificate");
         connectedClientCertificate = receiveCertificate();
         validateCertificate(connectedClientCertificate);
+        System.out.println(input.readUTF());
         System.out.println("Certificate authenticated");
 //		Create threads to allow free flow of messages in both directions
         createThreads();
@@ -100,17 +102,18 @@ public class Main {
 
         try {
             cert.verify(caCertificate.getPublicKey());
-        } catch (CertificateException e) {
+            output.writeUTF("Certificate Accepted");
+        } catch (CertificateException | NoSuchAlgorithmException | NoSuchProviderException | SignatureException | IOException e) {
             e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (InvalidKeyException e) {
-            System.out.println("Invalid Key");
-            sendQueue.add("Invalid Key"); //TODO Luc
-        } catch (NoSuchProviderException e) {
-            e.printStackTrace();
-        } catch (SignatureException e) {
-            e.printStackTrace();
+        }
+        catch (InvalidKeyException e) {
+            System.out.println("Invalid Certificate");
+            try {
+                output.writeUTF("Invalid Certificate");
+            }
+            catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
         }
     }
 
