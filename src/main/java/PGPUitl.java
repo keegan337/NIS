@@ -54,16 +54,30 @@ public class PGPUitl {
 
     public static byte[] signData(byte[] data, final X509Certificate signingCertificate, final PrivateKey signingKey) throws CertificateEncodingException, OperatorCreationException, CMSException, IOException {
         byte[] signedMessage = null;
-        List<X509Certificate> certList = new ArrayList<X509Certificate>();
+
+        //Creating a list of X509Certificate objects
+        List<X509Certificate> certificateList = new ArrayList<X509Certificate>();
+
+        //Creating a CMSTypedData object using the data byte array that was sent to the method
         CMSTypedData cmsData = new CMSProcessableByteArray(data);
-        certList.add(signingCertificate);
-        Store certs = new JcaCertStore(certList);
-        CMSSignedDataGenerator cmsGenerator = new CMSSignedDataGenerator();
+
+        certificateList.add(signingCertificate);
+
+        //Creating a new store from the certificate list
+        Store certificateStore = new JcaCertStore(certificateList);
+
+        CMSSignedDataGenerator cmsSignedDataGenerator = new CMSSignedDataGenerator();
+
         ContentSigner contentSigner = new JcaContentSignerBuilder("SHA256withRSA").build(signingKey);
-        cmsGenerator.addSignerInfoGenerator(new JcaSignerInfoGeneratorBuilder(new JcaDigestCalculatorProviderBuilder().setProvider("BC").build()).build(contentSigner, signingCertificate));
-        cmsGenerator.addCertificates(certs);
-        CMSSignedData cms = cmsGenerator.generate(cmsData, true);
+
+        cmsSignedDataGenerator.addSignerInfoGenerator(new JcaSignerInfoGeneratorBuilder(new JcaDigestCalculatorProviderBuilder().setProvider("BC").build()).build(contentSigner, signingCertificate));
+
+        cmsSignedDataGenerator.addCertificates(certificateStore);
+
+        CMSSignedData cms = cmsSignedDataGenerator.generate(cmsData, true);
+
         signedMessage = cms.getEncoded();
+
         return signedMessage;
     }
 
