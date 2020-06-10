@@ -76,7 +76,7 @@ public class GenerateClientCert {
 
 		// generate signed certificate
 		X509CertificateHolder certHolder = ca.getSignedClientCertificate(kp.getPublic(), nameBuilder.build());
-		System.out.println("New client certificate created for "+username);
+		System.out.println("\nNew client certificate created for "+username);
 		
 		// save cert and keys to file
 		JcaX509CertificateConverter converter = new JcaX509CertificateConverter();

@@ -67,7 +67,9 @@ public class Main {
 		
 		System.out.println();
 		ensureCertificateExists(username, password);
-		System.out.println("Reading client and CA certificates and client private keys from keystore on disk");
+        
+        System.out.println();
+		System.out.println("Reading client and CA certificates and client private keys from keystore on disk:");
 		KeyStore store = CertificateUtils.loadKeyStoreFromPKCS12(username + ".p12", password);
 		Certificate[] certChain = store.getCertificateChain(username);
 		clientCertificate = (X509Certificate) certChain[0];
@@ -75,9 +77,9 @@ public class Main {
 		clientPrivateKey = (PrivateKey) store.getKey(username, password.toCharArray());
 		
 		converter = new JcaPGPKeyConverter();
-		System.out.println("Client Public Key (from certificate) = " + clientCertificate.getPublicKey());
-		System.out.println("Client Private Key (from keystore) = " + clientPrivateKey);
-		System.out.println("CA Public Key (from certificate) = " + caCertificate.getPublicKey());
+		System.out.println("Client Public Key (from certificate):\n" + clientCertificate.getPublicKey());
+		System.out.println("\nClient Private Key (from keystore):\n" + clientPrivateKey);
+		System.out.println("\nCA Public Key (from certificate):\n" + caCertificate.getPublicKey());
 
 
 //		Initial connection setup
@@ -103,10 +105,11 @@ public class Main {
 		connectedClientCertificate = receiveCertificate();
 		validateCertificate(connectedClientCertificate);
 		System.out.println("Response from connected client: " + input.readUTF());
-		System.out.println("Certificates authenticated");
+		System.out.println("Certificates validation successful");
 		
 //		Create threads to allow free flow of messages in both directions
 		System.out.println();
+		System.out.println("Creating threads for sending and receiving of messages...");
 		createThreads();
 		System.out.println("Threads created");
 		
@@ -133,7 +136,7 @@ public class Main {
 			GenerateClientCert.generateClientCert(username, password);
 			System.out.println("Keystore generated");
 		} else {
-			System.out.println("Keystore found.");
+			System.out.println("Keystore found");
 		}
 	}
 	
@@ -146,6 +149,7 @@ public class Main {
 		System.out.println("Validating certificate received was signed by the trusted Certificate Authority:");
 		try {
 			cert.verify(caCertificate.getPublicKey());
+			System.out.println("Certificate validated successfully");
 			output.writeUTF("Certificate Accepted");
 		}
 		catch (CertificateException | NoSuchAlgorithmException | NoSuchProviderException | SignatureException | IOException e) {
@@ -270,8 +274,8 @@ public class Main {
     
 
                     try {
-                        System.out.println("Receiving message:");
                         signedDecryptedMessage = PGPUitl.decryptInputStream(input, myPGPPrivateKey);
+	                    System.out.println("Received message:");
                     } catch (PGPException | InvalidCipherTextException e) {
                         e.printStackTrace();
                     }
