@@ -7,20 +7,15 @@ import org.bouncycastle.openpgp.operator.jcajce.JcaPGPKeyConverter;
 import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.*;
-import org.bouncycastle.operator.OperatorCreationException;
 
-import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.*;
 import java.security.*;
 import java.security.cert.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.Scanner;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -222,47 +217,33 @@ public class Main {
         {
             while (true) {
                 try {
-//					TODO Jared: Change this to whatever format needs to be sent
-
                     String received = "Error";
 
                     PGPPublicKey myPGPPublicKey = null;
-                    PublicKey myPublicKey = clientCertificate.getPublicKey();
-                    Date t = new GregorianCalendar(2014, Calendar.FEBRUARY, 11).getTime();
-
-                    //Need to check which algorithm is correct
-                    try {
-                        myPGPPublicKey = converter.getPGPPublicKey(PGPPublicKey.RSA_ENCRYPT, myPublicKey, t);
-                    } catch (PGPException e) {
-                        e.printStackTrace();
-                    }
-
                     PGPPrivateKey myPGPPrivateKey = null;
-                    try {
-                        myPGPPrivateKey = converter.getPGPPrivateKey(myPGPPublicKey, clientPrivateKey);
-                    } catch (PGPException e) {
-                        e.printStackTrace();
-                    }
-
                     byte[] signedDecryptedMessage = null;
+    
+                    PublicKey myPublicKey = clientCertificate.getPublicKey();
+                    Date t = clientCertificate.getNotBefore();
+                    //TODO Jared: See here the change made to the times if you are happy?
+    
+                    convertKeyPairJCAToPGP(myPGPPublicKey, myPGPPrivateKey, myPublicKey, t);
+    
 
                     try {
-                        signedDecryptedMessage = PGPUitl.decryptFile(input, myPGPPrivateKey);
-                    } catch (PGPException e) {
-                        e.printStackTrace();
-                    } catch (InvalidCipherTextException e) {
+                        System.out.println("Receiving message:");
+                        signedDecryptedMessage = PGPUitl.decryptInputStream(input, myPGPPrivateKey);
+                    } catch (PGPException | InvalidCipherTextException e) {
                         e.printStackTrace();
                     }
-
+    
                     try {
                         received = PGPUitl.verifSignData(signedDecryptedMessage);
-                    } catch (CMSException e) {
-                        e.printStackTrace();
-                    } catch (OperatorCreationException e) {
+                    } catch (CMSException | OperatorCreationException e) {
                         e.printStackTrace();
                     }
-
-
+    
+    
                     System.out.println("Received:");
                     System.out.println(received);
 
@@ -280,19 +261,17 @@ public class Main {
         {
             while (true) {
                 try {
-//					TODO Jared: Change this to whatever format needs to be received
 
                     String message = sendQueue.take(); // take a message out of the queue if there is one available
                     byte [] signedMessage = null;
                     try {
                         signedMessage = PGPUitl.signData(message.getBytes(), clientCertificate, clientPrivateKey);
-                    } catch (OperatorCreationException e) {
-                        e.printStackTrace();
-                    } catch (CMSException e) {
+                    } catch (OperatorCreationException | CMSException e) {
                         e.printStackTrace();
                     }
-
-                    Date t = new GregorianCalendar(2014, Calendar.FEBRUARY, 11).getTime();
+    
+                    //TODO Jared: See here the change made to the times if you are happy?
+                    Date t = connectedClientCertificate.getNotBefore();
                     converter = new JcaPGPKeyConverter();
                     PGPPublicKey bobClientPGPPublicKey = null;
                     PublicKey bobClientPublicKey = connectedClientCertificate.getPublicKey();
@@ -305,7 +284,7 @@ public class Main {
                     }
 
                     try {
-                        PGPUitl.encryptFile(byteArrayOutputStream, signedMessage, bobClientPGPPublicKey);
+                        PGPUitl.encryptBytes(byteArrayOutputStream, signedMessage, bobClientPGPPublicKey);
                     } catch (PGPException e) {
                         e.printStackTrace();
                     }
@@ -319,5 +298,22 @@ public class Main {
         });
         readMsgThread.start();
         sendMsgThread.start();
+    }
+    
+    private static void convertKeyPairJCAToPGP(PGPPublicKey myPGPPublicKey, PGPPrivateKey myPGPPrivateKey, PublicKey myPublicKey, Date t) {
+        try {
+            myPGPPublicKey = converter.getPGPPublicKey(PGPPublicKey.RSA_ENCRYPT, myPublicKey, t);
+        } catch (PGPException e) {
+            System.err.println("Error in converting client public key to pgp-public key format");
+            e.printStackTrace();
+        }
+        
+        try {
+            myPGPPrivateKey = converter.getPGPPrivateKey(myPGPPublicKey, clientPrivateKey);
+        } catch (PGPException e) {
+            System.err.println("Error in converting client private key to pgp-private key format");
+            e.printStackTrace();
+        }
+        
     }
 }

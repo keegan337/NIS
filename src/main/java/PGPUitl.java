@@ -72,6 +72,10 @@ public class PGPUitl {
     }
 
     public static String verifSignData(final byte[] signedData) throws CMSException, IOException, OperatorCreationException, CertificateException {
+        System.out.println("Verifying message signature");
+        //TODO Jared: Again here I think showing the signature in some way might be nice? But it might be a massive effort
+        // In which case don't bother. You'll see in Main that when we verify the certificates at the start its wrapped in the library
+        // And so we just say "Verifiying certs" and leave it at that. Can do the same here if thats the case. Don't waste your time if its hidden.
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(signedData);
 
         ASN1InputStream asn1InputStream = new ASN1InputStream(byteArrayInputStream);
@@ -110,7 +114,8 @@ public class PGPUitl {
         return message;
     }
 
-    public static void encryptFile(OutputStream out, byte[] inputByteArray, PGPPublicKey encKey) throws IOException, NoSuchProviderException, PGPException {
+    public static void encryptBytes(OutputStream out, byte[] inputByteArray, PGPPublicKey encKey) throws IOException, NoSuchProviderException, PGPException {
+        System.out.println("Encrypting and compressing message:");
         //Adds a new Security Provider
         Security.addProvider(new BouncyCastleProvider());
 
@@ -124,6 +129,7 @@ public class PGPUitl {
 
         OutputStream outputStream = literalDataGenerator.open(compressedDataGenerator.open(byteStreamOut), PGPLiteralData.BINARY, "filename", in.available(), new Date());
         Streams.pipeAll(in, outputStream);
+        //TODO Jared: Comments probably need to change to not reflect files anymore 👍
         //Read a file and write its contents as a literal data packet to the compressed data generator stream
         //PGPUtil.writeFileToLiteralData(compressedDataGenerator.open(byteStreamOut), PGPLiteralData.BINARY, new File(fileName));
 
@@ -151,7 +157,7 @@ public class PGPUitl {
 
     }
 
-    public static byte[] decryptFile(InputStream in, PGPPrivateKey pgpPrivateKey) throws IOException, PGPException, InvalidCipherTextException {
+    public static byte[] decryptInputStream(InputStream in, PGPPrivateKey pgpPrivateKey) throws IOException, PGPException, InvalidCipherTextException {
         Security.addProvider(new BouncyCastleProvider());
 
         //Obtains a stream that can be used to read PGP data from the provided stream
@@ -188,6 +194,10 @@ public class PGPUitl {
 
         jcaPGPFactory = new JcaPGPObjectFactory(decryptedDataInputStream);
 
+        //TODO Jared: Think this is where the stream is decrypted and to be decompressed yeah?
+        // Nice if we can get some kind of representation of the data in its encrypted form -> decrypted but compressed -> decompressed
+        // Might be very hard to do though in which case just say something like "decrypted data" etc
+        
         PGPCompressedData pgpCompressedData = (PGPCompressedData) jcaPGPFactory.nextObject();
 
         //Construct a JcaPGPObjectFactory object with an input stream that decompresses and returns data in the compressed packet
