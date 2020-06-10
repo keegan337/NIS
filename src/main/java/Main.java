@@ -8,8 +8,6 @@ import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.*;
 
-import org.bouncycastle.operator.OperatorCreationException;
-
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.*;
@@ -17,7 +15,9 @@ import java.security.cert.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.Scanner;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -243,120 +243,133 @@ public class Main {
 
 //			ClientConnectThread clientConnectThread = new ClientConnectThread(clientSocket);
 //			clientConnectThread.start();
-        } catch (IOException e) {
-            System.err.println("Error whilst opening listening socket/connecting client.");
-            e.printStackTrace();
-        }
-
-    }
-
-    /**
-     * Creates two threads, one to deal with messages being sent to the server, by the client,
-     * and one to deal with messages being sent to the client, by the server. Must be called after a successful
-     * login has occurred.
-     */
-    private static void createThreads() {
-        Thread readMsgThread = new Thread(() ->
-        {
-            while (true) {
-                try {
-                    String received = "Error";
-
-                    PGPPublicKey myPGPPublicKey = null;
-                    PGPPrivateKey myPGPPrivateKey = null;
-                    byte[] signedDecryptedMessage = null;
-    
-                    PublicKey myPublicKey = clientCertificate.getPublicKey();
-                    Date t = clientCertificate.getNotBefore();
-                    //TODO Jared: See here the change made to the times if you are happy?
-    
-                    convertKeyPairJCAToPGP(myPGPPublicKey, myPGPPrivateKey, myPublicKey, t);
-    
-
-                    try {
-                        signedDecryptedMessage = PGPUitl.decryptInputStream(input, myPGPPrivateKey);
-	                    System.out.println("Received message:");
-                    } catch (PGPException | InvalidCipherTextException e) {
-                        e.printStackTrace();
-                    }
-    
-                    try {
-                        received = PGPUitl.verifSignData(signedDecryptedMessage);
-                    } catch (CMSException | OperatorCreationException e) {
-                        e.printStackTrace();
-                    }
-    
-    
-                    System.out.println("Received:");
-                    System.out.println(received);
-
-                } catch (EOFException eofEx) {
-                    System.err.println("Hit end of file exception");
-                    eofEx.printStackTrace();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    System.err.println("Client terminated connection");
-                    System.exit(1);
-                }
-            }
-        });
-        Thread sendMsgThread = new Thread(() ->
-        {
-            while (true) {
-                try {
-
-                    String message = sendQueue.take(); // take a message out of the queue if there is one available
-                    byte [] signedMessage = null;
-                    try {
-                        signedMessage = PGPUitl.signData(message.getBytes(), clientCertificate, clientPrivateKey);
-                    } catch (OperatorCreationException | CMSException e) {
-                        e.printStackTrace();
-                    }
-    
-                    //TODO Jared: See here the change made to the times if you are happy?
-                    Date t = connectedClientCertificate.getNotBefore();
-                    converter = new JcaPGPKeyConverter();
-                    PGPPublicKey bobClientPGPPublicKey = null;
-                    PublicKey bobClientPublicKey = connectedClientCertificate.getPublicKey();
-
-                    //Need to check which algorithm is correct
-                    try {
-                        bobClientPGPPublicKey = converter.getPGPPublicKey(PGPPublicKey.RSA_ENCRYPT, bobClientPublicKey, t);
-                    } catch (PGPException e) {
-                        e.printStackTrace();
-                    }
-
-                    try {
-                        PGPUitl.encryptBytes(byteArrayOutputStream, signedMessage, bobClientPGPPublicKey);
-                    } catch (PGPException e) {
-                        e.printStackTrace();
-                    }
-                    output.write(byteArrayOutputStream.toByteArray());
-
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        readMsgThread.start();
-        sendMsgThread.start();
-    }
-    
-    private static void convertKeyPairJCAToPGP(PGPPublicKey myPGPPublicKey, PGPPrivateKey myPGPPrivateKey, PublicKey myPublicKey, Date t) {
-        try {
-            myPGPPublicKey = converter.getPGPPublicKey(PGPPublicKey.RSA_ENCRYPT, myPublicKey, t);
-        } catch (PGPException e) {
-            System.err.println("Error in converting client public key to pgp-public key format");
-            e.printStackTrace();
-        }
-        
-        try {
-            myPGPPrivateKey = converter.getPGPPrivateKey(myPGPPublicKey, clientPrivateKey);
-        } catch (PGPException e) {
-            System.err.println("Error in converting client private key to pgp-private key format");
-            e.printStackTrace();
-        }
-        
-    }
+		}
+		catch (IOException e) {
+			System.err.println("Error whilst opening listening socket/connecting client.");
+			e.printStackTrace();
+		}
+		
+	}
+	
+	/**
+	 * Creates two threads, one to deal with messages being sent to the server, by the client,
+	 * and one to deal with messages being sent to the client, by the server. Must be called after a successful
+	 * login has occurred.
+	 */
+	private static void createThreads() {
+		Thread readMsgThread = new Thread(() ->
+		{
+			while (true) {
+				try {
+//					TODO Jared: Change this to whatever format needs to be sent
+					
+					String received = "Error";
+					
+					PGPPublicKey myPGPPublicKey = null;
+					PublicKey myPublicKey = clientCertificate.getPublicKey();
+					Date t = new GregorianCalendar(2014, Calendar.FEBRUARY, 11).getTime();
+					
+					//Need to check which algorithm is correct
+					try {
+						myPGPPublicKey = converter.getPGPPublicKey(PGPPublicKey.RSA_ENCRYPT, myPublicKey, t);
+					}
+					catch (PGPException e) {
+						e.printStackTrace();
+					}
+					
+					PGPPrivateKey myPGPPrivateKey = null;
+					try {
+						myPGPPrivateKey = converter.getPGPPrivateKey(myPGPPublicKey, clientPrivateKey);
+					}
+					catch (PGPException e) {
+						e.printStackTrace();
+					}
+					
+					byte[] signedDecryptedMessage = null;
+					
+					try {
+						signedDecryptedMessage = PGPUtil.decryptInputStream(input, myPGPPrivateKey);
+					}
+					catch (PGPException e) {
+						e.printStackTrace();
+					}
+					catch (InvalidCipherTextException e) {
+						e.printStackTrace();
+					}
+					
+					try {
+						received = PGPUtil.verifSignData(signedDecryptedMessage);
+					}
+					catch (CMSException e) {
+						e.printStackTrace();
+					}
+					catch (OperatorCreationException e) {
+						e.printStackTrace();
+					}
+					
+					
+					System.out.println("Received:");
+					System.out.println(received);
+					
+				}
+				catch (EOFException eofEx) {
+					System.err.println("Hit end of file exception");
+					eofEx.printStackTrace();
+				}
+				catch (Exception e) {
+					e.printStackTrace();
+					System.err.println("Client terminated connection");
+					System.exit(1);
+				}
+			}
+		});
+		Thread sendMsgThread = new Thread(() ->
+		{
+			while (true) {
+				try {
+//					TODO Jared: Change this to whatever format needs to be received
+					
+					String message = sendQueue.take(); // take a message out of the queue if there is one available
+					byte[] signedMessage = null;
+					try {
+						signedMessage = PGPUtil.signData(message.getBytes(), clientCertificate, clientPrivateKey);
+					}
+					catch (OperatorCreationException e) {
+						e.printStackTrace();
+					}
+					catch (CMSException e) {
+						e.printStackTrace();
+					}
+					
+					Date t = new GregorianCalendar(2014, Calendar.FEBRUARY, 11).getTime();
+					converter = new JcaPGPKeyConverter();
+					PGPPublicKey bobClientPGPPublicKey = null;
+					PublicKey bobClientPublicKey = connectedClientCertificate.getPublicKey();
+					
+					//Need to check which algorithm is correct
+					try {
+						bobClientPGPPublicKey = converter.getPGPPublicKey(PGPPublicKey.RSA_ENCRYPT, bobClientPublicKey, t);
+					}
+					catch (PGPException e) {
+						e.printStackTrace();
+					}
+					
+					try {
+						PGPUtil.encryptBytes(byteArrayOutputStream, signedMessage, bobClientPGPPublicKey);
+					}
+					catch (PGPException e) {
+						e.printStackTrace();
+					}
+					output.write(byteArrayOutputStream.toByteArray());
+					
+					
+				}
+				catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
+		readMsgThread.start();
+		sendMsgThread.start();
+	}
 }

@@ -37,7 +37,7 @@ import org.bouncycastle.operator.jcajce.JcaDigestCalculatorProviderBuilder;
 import org.bouncycastle.util.Store;
 import org.bouncycastle.util.io.Streams;
 
-public class PGPUitl {
+public class PGPUtil {
 
     public static byte[] signData(byte[] data, final X509Certificate signingCertificate, PrivateKey signingKey) throws CertificateEncodingException, OperatorCreationException, CMSException, IOException {
         Security.addProvider(new BouncyCastleProvider());
@@ -161,7 +161,7 @@ public class PGPUitl {
         Security.addProvider(new BouncyCastleProvider());
 
         //Obtains a stream that can be used to read PGP data from the provided stream
-        in = PGPUtil.getDecoderStream(in);
+        in = org.bouncycastle.openpgp.PGPUtil.getDecoderStream(in);
 
         JcaPGPObjectFactory jcaPGPFactory;
 
