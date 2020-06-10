@@ -71,7 +71,7 @@ public class PGPUitl {
         return signedMessage;
     }
 
-    public static boolean verifSignData(final byte[] signedData) throws CMSException, IOException, OperatorCreationException, CertificateException {
+    public static String verifSignData(final byte[] signedData) throws CMSException, IOException, OperatorCreationException, CertificateException {
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(signedData);
 
         ASN1InputStream asn1InputStream = new ASN1InputStream(byteArrayInputStream);
@@ -103,12 +103,11 @@ public class PGPUitl {
         CMSTypedData cmsProcessable = cmsSignedData.getSignedContent();
 
         if (!verifiedResult) {
-            return false;
+            return "Message Insecure";
         }
 
         String message = new String((byte[])cmsProcessable.getContent());
-        System.out.println(message);
-        return true;
+        return message;
     }
 
     public static void encryptFile(OutputStream out, byte[] inputByteArray, PGPPublicKey encKey) throws IOException, NoSuchProviderException, PGPException {
@@ -149,6 +148,7 @@ public class PGPUitl {
         encryptedCompressedOutputstream.close();
 
         out.close();
+
     }
 
     public static byte[] decryptFile(InputStream in, PGPPrivateKey pgpPrivateKey) throws IOException, PGPException, InvalidCipherTextException {

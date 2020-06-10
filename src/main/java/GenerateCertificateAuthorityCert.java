@@ -33,4 +33,24 @@ public class GenerateCertificateAuthorityCert {
 		Certificate[] certChain = new Certificate[]{cert};
 		CertificateUtils.saveToPKCS12(kp, certHolder, certChain, "uct", "123", "uct.p12", "123");
 	}
+
+	/**
+	 * generates and saves the CA's certificate
+	 */
+	public static void generateCertificateAuthorityCert() throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException, OperatorCreationException {
+		// generate key pair
+		KeyPair kp = CertificateUtils.generateKeyPair();
+
+		// create certificate
+		X500Name name = CertificateUtils.getX500Name("ZA", "University of Cape Town", "Department of Computer Science", "dept@cs.uct.ac.za");
+		X509CertificateHolder certHolder = CertificateUtils.getX509CertificateHolder(kp.getPrivate(), kp.getPublic(), name, name);
+
+		// save certificate
+		CertificateUtils.saveCertToDER(certHolder, "uct.der");
+
+		// save private key
+		X509Certificate cert = new JcaX509CertificateConverter().getCertificate(certHolder);
+		Certificate[] certChain = new Certificate[]{cert};
+		CertificateUtils.saveToPKCS12(kp, certHolder, certChain, "uct", "123", "uct.p12", "123");
+	}
 }
