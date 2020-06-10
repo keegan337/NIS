@@ -128,8 +128,11 @@ public class CertificateUtils {
 	 * @throws NoSuchAlgorithmException
 	 */
 	public static KeyPair generateKeyPair() throws NoSuchAlgorithmException {
+		System.out.println("Generating key pair using RSA4096");
 		KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
 		keyGen.initialize(4096);
-		return keyGen.generateKeyPair();
+		KeyPair returnable = keyGen.generateKeyPair();
+		System.out.println("Key pair generated\n\tPublic Key = "+returnable.getPublic()+"\n\tPrivate Key = "+returnable.getPrivate());
+		return returnable;
 	}
 }
