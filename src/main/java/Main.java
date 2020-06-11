@@ -104,7 +104,7 @@ public class Main {
 		System.out.println("Certificates validation successful");
 
 
-//		Create threads to allow free flow of messages in both directions
+//		Create thread to receive messages asynchronously
 		System.out.println();
 		System.out.println("Creating threads for sending and receiving of messages...");
 		networkManager.startAsyncReceiveThread(bytes -> {
