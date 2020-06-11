@@ -111,6 +111,9 @@ public class Main {
 			//Decrypt message
 			//TODO: bytes = CryptoUtils.decrypt(bytes, clientPrivateKey);
 
+			//Unzip message
+			//TODO: bytes = CryptoUtils.unzip(bytes)
+
 			//Verify signature
 			try {
 				bytes = CryptoUtils.verifyAndExtractSignedData(bytes, connectedClientCertificate.getPublicKey());
@@ -141,6 +144,9 @@ public class Main {
 			} catch (InvalidKeyException | SignatureException e) {
 				e.printStackTrace();
 			}
+
+			//Zip message
+			//TODO: bytes = CryptoUtils.unzip(bytes)
 
 			//Encrypt message
 			//TODO: bytes = CryptoUtils.encrypt(bytes, connectedClientCertificate.getPublicKey());
