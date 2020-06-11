@@ -147,6 +147,8 @@ public class CertificateUtils {
 		CertificateAuthority ca = new CertificateAuthority();
 		X500NameBuilder nameBuilder = new X500NameBuilder();
 
+		nameBuilder.addRDN(BCStyle.NAME, username);
+
 		// generate key pair
 		KeyPair kp = CertificateUtils.generateKeyPair();
 
