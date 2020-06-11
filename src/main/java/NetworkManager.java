@@ -29,15 +29,9 @@ public class NetworkManager {
 	/**
 	 * Connects the current user to the server.
 	 */
-	public void connect(String host, int port) {
-		try {
-			socket = new Socket(host, port);
-			setupIOStreams();
-		}
-		catch (IOException e) {
-			System.err.println("Error creating client socket.");
-			e.printStackTrace();
-		}
+	public void connect(String host, int port) throws IOException {
+		socket = new Socket(host, port);
+		setupIOStreams();
 	}
 
 	/**

@@ -3,6 +3,7 @@ import org.bouncycastle.operator.OperatorCreationException;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.KeyStore;
@@ -87,7 +88,13 @@ public class Main {
 		} else {
 			MACHINE_NAME = args[0];
 			SERVER_PORT = Integer.parseInt(args[1]);
-			networkManager.connect(MACHINE_NAME, SERVER_PORT);
+			try {
+				networkManager.connect(MACHINE_NAME, SERVER_PORT);
+			}
+			catch (ConnectException e) {
+				System.out.println("Could not connect to server");
+				System.exit(2);
+			}
 			System.out.println("Connected to " + MACHINE_NAME + ":" + SERVER_PORT);
 			System.out.println("Performing initial certificate verification:");
 			sendCertificate(clientCertificate);
@@ -102,9 +109,22 @@ public class Main {
 		System.out.println();
 		System.out.println("Creating threads for sending and receiving of messages...");
 		networkManager.startAsyncReceiveThread(bytes -> {
-			//CryptoUtils.decrypt(bytes) + verify etc.
+			//Decrypt message
+			//TODO: bytes = CryptoUtils.decrypt(bytes, clientPrivateKey);
+
+			//Verify signature
+			try {
+				bytes = CryptoUtils.verifyAndExtractSignedData(bytes, connectedClientCertificate.getPublicKey());
+			}
+			catch (CryptoUtils.InvalidSignatureException e) {
+				System.out.println("WARNING: INVALID SIGNATURE");
+				System.out.println("This message was not signed by " + connectedClientCertificate.getSubjectX500Principal().getName());
+			}
+			catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
+				e.printStackTrace();
+			}
+
 			System.out.println("message received: " + new String(bytes, StandardCharsets.UTF_8));
-			//TODO: decode and display message
 		});
 		System.out.println("Threads created");
 		
@@ -112,10 +132,21 @@ public class Main {
 		String inputLine = "";
 		
 		while (!inputLine.equals("EXIT")) {
-			System.out.print("enter a message to send: ");
+			System.out.println("enter a message to send:");
 			inputLine = in.nextLine();
 			byte[] bytes = inputLine.getBytes();
-			//TODO: bytes = CryptoUtils.sign + encrypt message
+
+			//Sign message
+			try {
+				bytes = CryptoUtils.signData(bytes, clientPrivateKey);
+			} catch (InvalidKeyException | SignatureException e) {
+				e.printStackTrace();
+			}
+
+			//Encrypt message
+			//TODO: bytes = CryptoUtils.encrypt(bytes, connectedClientCertificate.getPublicKey());
+
+			//Send message
 			networkManager.writeByteArray(bytes);
 		}
 	}

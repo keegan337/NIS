@@ -17,7 +17,7 @@ public class CryptoUtils {
 		return outputStream.toByteArray();
 	}
 
-	public static byte[] verifyAndExtractSignedData(byte[] signedData, PublicKey publicKey) throws Exception {
+	public static byte[] verifyAndExtractSignedData(byte[] signedData, PublicKey publicKey) throws InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		byte[] signature = Arrays.copyOfRange(signedData, 0, SIGNATURE_LENGTH);
 		byte[] data = Arrays.copyOfRange(signedData, SIGNATURE_LENGTH, signedData.length);
 
@@ -28,7 +28,13 @@ public class CryptoUtils {
 		if (verifier.verify(signature)) {
 			return data;
 		} else {
-			throw new Exception("Invalid Signature");
+			throw new InvalidSignatureException();
+		}
+	}
+
+	public static class InvalidSignatureException extends Exception {
+		public InvalidSignatureException() {
+			super("invalid signature");
 		}
 	}
 }
