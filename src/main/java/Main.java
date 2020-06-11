@@ -131,7 +131,7 @@ public class Main {
 		File f = new File(username + ".p12");
 		if (!f.exists()) {
 			System.out.println("Keystore not found, generating client certificate for new user");
-			GenerateClientCert.generateClientCert(username, password);
+			CertificateUtils.generateClientCert(username, password);
 			System.out.println("Keystore generated");
 		} else {
 			System.out.println("Keystore found");
