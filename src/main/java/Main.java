@@ -74,10 +74,9 @@ public class Main {
 
 
 //		Initial connection setup
-		if (args.length < 3) {
-			if (args.length == 2) {
-				MACHINE_NAME = args[0];
-				SERVER_PORT = Integer.parseInt(args[1]);
+		if (args.length < 2) {
+			if (args.length == 1) {
+				SERVER_PORT = Integer.parseInt(args[0]);
 			}
 			networkManager.listenForConnection(SERVER_PORT);
 			System.out.println("Connection setup on " + MACHINE_NAME + ":" + SERVER_PORT);
