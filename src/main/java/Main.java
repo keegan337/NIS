@@ -37,7 +37,7 @@ public class Main {
 	/**
 	 * @param args leave blank to run as server, otherwise provide ip and port to connect directly (1.2.3.4 1234)
 	 */
-	public static void main(String[] args) throws CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, OperatorCreationException {
+	public static void main(String[] args) throws CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, OperatorCreationException, SignatureException, InvalidKeyException {
 		System.out.println("Please enter your username and password, if this is the first run enter a username and password of your choice");
 		String username = "alice";
 		String password = "123";
@@ -139,11 +139,7 @@ public class Main {
 			byte[] bytes = inputLine.getBytes();
 
 			//Sign message
-			try {
-				bytes = CryptoUtils.signData(bytes, clientPrivateKey);
-			} catch (InvalidKeyException | SignatureException e) {
-				e.printStackTrace();
-			}
+			bytes = CryptoUtils.signData(bytes, clientPrivateKey);
 
 			//Zip message
 			//TODO: bytes = CryptoUtils.unzip(bytes)
