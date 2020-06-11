@@ -65,22 +65,26 @@ public class Main {
 		
 		System.out.println();
 		ensureCertificateExists(username, password);
-        
-        System.out.println();
+		
+		System.out.println();
 		System.out.println("Reading client and CA certificates and client private keys from keystore on disk:");
 		KeyStore store = CertificateUtils.loadKeyStoreFromPKCS12(username + ".p12", password);
 		Certificate[] certChain = store.getCertificateChain(username);
 		clientCertificate = (X509Certificate) certChain[0];
 		caCertificate = (X509Certificate) certChain[1];
 		clientPrivateKey = (PrivateKey) store.getKey(username, password.toCharArray());
-
+		
 		System.out.println("Client Public Key (from certificate):\n" + clientCertificate.getPublicKey());
 		System.out.println("\nClient Private Key (from keystore):\n" + clientPrivateKey);
 		System.out.println("\nCA Public Key (from certificate):\n" + caCertificate.getPublicKey());
 
 
 //		Initial connection setup
-		if (args.length == 0) {
+		if (args.length < 3) {
+			if (args.length == 2) {
+				MACHINE_NAME = args[0];
+				SERVER_PORT = Integer.parseInt(args[1]);
+			}
 			ID = "ServerClient";
 			startServer();
 			System.out.println("Connection setup on " + MACHINE_NAME + ":" + SERVER_PORT);
@@ -103,7 +107,7 @@ public class Main {
 		validateCertificate(connectedClientCertificate);
 		System.out.println("Response from connected client: " + input.readUTF());
 		System.out.println("Certificates validation successful");
-		
+
 //		Create threads to allow free flow of messages in both directions
 		System.out.println();
 		System.out.println("Creating threads for sending and receiving of messages...");
@@ -255,12 +259,12 @@ public class Main {
 	private static void createThreads() {
 		Thread readMsgThread = new Thread(() -> {
 			while (true) {
-
+			
 			}
 		});
 		Thread sendMsgThread = new Thread(() -> {
 			while (true) {
-
+			
 			}
 		});
 		readMsgThread.start();
