@@ -101,7 +101,7 @@ public class Main {
 			validateCertificate(connectedClientCertificate);
 		}
 
-		System.out.println("Certificates validation successful");
+		System.out.println("Mutual certificate exchange and validation successful");
 
 
 //		Create thread to receive messages asynchronously
