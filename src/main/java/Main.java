@@ -148,6 +148,8 @@ public class Main {
 			//Send message
 			networkManager.writeByteArray(bytes);
 		}
+
+		networkManager.close();
 	}
 	
 	/**
