@@ -1,23 +1,25 @@
-import org.bouncycastle.cms.CMSException;
-import org.bouncycastle.crypto.InvalidCipherTextException;
-import org.bouncycastle.openpgp.PGPException;
-import org.bouncycastle.openpgp.PGPPrivateKey;
-import org.bouncycastle.openpgp.PGPPublicKey;
-import org.bouncycastle.openpgp.operator.jcajce.JcaPGPKeyConverter;
 import org.bouncycastle.operator.OperatorCreationException;
 
-import java.io.*;
-
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.*;
-import java.security.cert.*;
+import java.security.InvalidKeyException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.PrivateKey;
+import java.security.SignatureException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.Scanner;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -32,10 +34,6 @@ public class Main {
 	private static DataOutputStream output;
 	private static String ID;
 	
-	private static ByteArrayOutputStream byteArrayOutputStream;
-	
-	private static JcaPGPKeyConverter converter;
-	
 	private static X509Certificate caCertificate; //CA cert
 	private static X509Certificate clientCertificate; // MY cert
 	private static X509Certificate connectedClientCertificate; // THEIR cert
@@ -47,7 +45,7 @@ public class Main {
 	/**
 	 * @param args leave blank to run as server, otherwise provide ip and port to connect directly (1.2.3.4 1234)
 	 */
-	public static void main(String[] args) throws CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, InvalidKeyException, NoSuchProviderException, SignatureException, OperatorCreationException {
+	public static void main(String[] args) throws CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, OperatorCreationException {
 		System.out.println("Please enter your username and password, if this is the first run enter a username and password of your choice");
 		String username = "alice";
 		String password = "123";
@@ -75,8 +73,7 @@ public class Main {
 		clientCertificate = (X509Certificate) certChain[0];
 		caCertificate = (X509Certificate) certChain[1];
 		clientPrivateKey = (PrivateKey) store.getKey(username, password.toCharArray());
-		
-		converter = new JcaPGPKeyConverter();
+
 		System.out.println("Client Public Key (from certificate):\n" + clientCertificate.getPublicKey());
 		System.out.println("\nClient Private Key (from keystore):\n" + clientPrivateKey);
 		System.out.println("\nCA Public Key (from certificate):\n" + caCertificate.getPublicKey());
@@ -218,7 +215,6 @@ public class Main {
 		try {
 			input = new DataInputStream(clientSocket.getInputStream());
 			output = new DataOutputStream(clientSocket.getOutputStream());
-			byteArrayOutputStream = new ByteArrayOutputStream();
 		}
 		catch (IOException e) {
 			System.err.println("Error creating data stream connection");
@@ -257,116 +253,14 @@ public class Main {
 	 * login has occurred.
 	 */
 	private static void createThreads() {
-		Thread readMsgThread = new Thread(() ->
-		{
+		Thread readMsgThread = new Thread(() -> {
 			while (true) {
-				try {
-//					TODO Jared: Change this to whatever format needs to be sent
-					
-					String received = "Error";
-					
-					PGPPublicKey myPGPPublicKey = null;
-					PublicKey myPublicKey = clientCertificate.getPublicKey();
-					Date t = new GregorianCalendar(2014, Calendar.FEBRUARY, 11).getTime();
-					
-					//Need to check which algorithm is correct
-					try {
-						myPGPPublicKey = converter.getPGPPublicKey(PGPPublicKey.RSA_ENCRYPT, myPublicKey, t);
-					}
-					catch (PGPException e) {
-						e.printStackTrace();
-					}
-					
-					PGPPrivateKey myPGPPrivateKey = null;
-					try {
-						myPGPPrivateKey = converter.getPGPPrivateKey(myPGPPublicKey, clientPrivateKey);
-					}
-					catch (PGPException e) {
-						e.printStackTrace();
-					}
-					
-					byte[] signedDecryptedMessage = null;
-					
-					try {
-						signedDecryptedMessage = PGPUtil.decryptInputStream(input, myPGPPrivateKey);
-					}
-					catch (PGPException e) {
-						e.printStackTrace();
-					}
-					catch (InvalidCipherTextException e) {
-						e.printStackTrace();
-					}
-					
-					try {
-						received = PGPUtil.verifSignData(signedDecryptedMessage);
-					}
-					catch (CMSException e) {
-						e.printStackTrace();
-					}
-					catch (OperatorCreationException e) {
-						e.printStackTrace();
-					}
-					
-					
-					System.out.println("Received:");
-					System.out.println(received);
-					
-				}
-				catch (EOFException eofEx) {
-					System.err.println("Hit end of file exception");
-					eofEx.printStackTrace();
-				}
-				catch (Exception e) {
-					e.printStackTrace();
-					System.err.println("Client terminated connection");
-					System.exit(1);
-				}
+
 			}
 		});
-		Thread sendMsgThread = new Thread(() ->
-		{
+		Thread sendMsgThread = new Thread(() -> {
 			while (true) {
-				try {
-//					TODO Jared: Change this to whatever format needs to be received
-					
-					String message = sendQueue.take(); // take a message out of the queue if there is one available
-					byte[] signedMessage = null;
-					try {
-						signedMessage = PGPUtil.signData(message.getBytes(), clientCertificate, clientPrivateKey);
-					}
-					catch (OperatorCreationException e) {
-						e.printStackTrace();
-					}
-					catch (CMSException e) {
-						e.printStackTrace();
-					}
-					
-					Date t = new GregorianCalendar(2014, Calendar.FEBRUARY, 11).getTime();
-					converter = new JcaPGPKeyConverter();
-					PGPPublicKey bobClientPGPPublicKey = null;
-					PublicKey bobClientPublicKey = connectedClientCertificate.getPublicKey();
-					
-					//Need to check which algorithm is correct
-					try {
-						bobClientPGPPublicKey = converter.getPGPPublicKey(PGPPublicKey.RSA_ENCRYPT, bobClientPublicKey, t);
-					}
-					catch (PGPException e) {
-						e.printStackTrace();
-					}
-					
-					try {
-						PGPUtil.encryptBytes(byteArrayOutputStream, signedMessage, bobClientPGPPublicKey);
-					}
-					catch (PGPException e) {
-						e.printStackTrace();
-					}
-					output.write(byteArrayOutputStream.toByteArray());
-					
-					
-				}
-				catch (Exception e) {
-					e.printStackTrace();
-				}
+
 			}
 		});
 		readMsgThread.start();
