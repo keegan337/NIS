@@ -124,6 +124,7 @@ public class Main {
 			}
 			catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
 				e.printStackTrace();
+				System.exit(2);
 			}
 
 			System.out.println("message received: " + new String(bytes, StandardCharsets.UTF_8));
