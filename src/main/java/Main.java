@@ -1,12 +1,9 @@
 import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -21,18 +18,12 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Scanner;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.LinkedBlockingDeque;
 
 
 public class Main {
 	private static int SERVER_PORT = 9000;
 	private static String MACHINE_NAME = "localhost";
-	private static final BlockingDeque<String> sendQueue = new LinkedBlockingDeque<>();
-	private static Socket clientSocket = null;
-	private static DataInputStream input;
-	private static DataOutputStream output;
-	private static String ID;
+	private static NetworkManager networkManager;
 	
 	private static X509Certificate caCertificate; //CA cert
 	private static X509Certificate clientCertificate; // MY cert
@@ -78,44 +69,50 @@ public class Main {
 		System.out.println("\nClient Private Key (from keystore):\n" + clientPrivateKey);
 		System.out.println("\nCA Public Key (from certificate):\n" + caCertificate.getPublicKey());
 
+		networkManager = new NetworkManager();
+
 
 //		Initial connection setup
 		if (args.length == 0) {
-			ID = "ServerClient";
-			startServer();
+			networkManager.listenForConnection(SERVER_PORT);
 			System.out.println("Connection setup on " + MACHINE_NAME + ":" + SERVER_PORT);
-			System.out.println("UserID = " + ID);
+			System.out.println("Performing initial certificate verification:");
+			connectedClientCertificate = receiveCertificate();
+			validateCertificate(connectedClientCertificate);
+			sendCertificate(clientCertificate);
 		} else {
-			ID = "ConnectingClient";
 			MACHINE_NAME = args[0];
-			SERVER_PORT = Integer.parseInt(args[1]);
-			setupConnection();
+//			SERVER_PORT = Integer.parseInt(args[1]);
+			networkManager.connect(MACHINE_NAME, SERVER_PORT);
 			System.out.println("Connected to " + MACHINE_NAME + ":" + SERVER_PORT);
+			System.out.println("Performing initial certificate verification:");
+			sendCertificate(clientCertificate);
+			connectedClientCertificate = receiveCertificate();
+			validateCertificate(connectedClientCertificate);
 		}
-		System.out.println("Setting up IO streams");
-		setupIOStreams();
 
-//		Perform certificate verification
-		System.out.println();
-		System.out.println("Performing initial certificate verification:");
-		sendCertificate(clientCertificate);
-		connectedClientCertificate = receiveCertificate();
-		validateCertificate(connectedClientCertificate);
-		System.out.println("Response from connected client: " + input.readUTF());
 		System.out.println("Certificates validation successful");
+
 		
 //		Create threads to allow free flow of messages in both directions
 		System.out.println();
 		System.out.println("Creating threads for sending and receiving of messages...");
-		createThreads();
+		networkManager.startAsyncReceiveThread(bytes -> {
+			//CryptoUtils.decrypt(bytes) + verify etc.
+			System.out.println("message received: " + new String(bytes, StandardCharsets.UTF_8));
+			//TODO: decode and display message
+		});
 		System.out.println("Threads created");
 		
 		
-		String inputLine = in.nextLine();
+		String inputLine = "";
 		
 		while (!inputLine.equals("EXIT")) {
-			sendQueue.add(inputLine);
+			System.out.print("enter a message to send: ");
 			inputLine = in.nextLine();
+			byte[] bytes = inputLine.getBytes();
+			//TODO: bytes = CryptoUtils.sign + encrypt message
+			networkManager.writeByteArray(bytes);
 		}
 	}
 	
@@ -147,20 +144,20 @@ public class Main {
 		try {
 			cert.verify(caCertificate.getPublicKey());
 			System.out.println("Certificate validated successfully");
-			output.writeUTF("Certificate Accepted");
-		}
-		catch (CertificateException | NoSuchAlgorithmException | NoSuchProviderException | SignatureException | IOException e) {
-			e.printStackTrace();
+			networkManager.writeByte(ProtocolUtils.CERT_VALID_BYTE);
 		}
 		catch (InvalidKeyException e) {
 			System.out.println("Invalid Certificate, closing connection.");
 			try {
-				output.writeUTF("Invalid Certificate");
+				networkManager.writeByte(ProtocolUtils.CERT_INVALID_BYTE);
+				networkManager.close();
 				System.exit(2);
 			}
 			catch (IOException ioException) {
 				ioException.printStackTrace();
 			}
+		} catch (CertificateException | NoSuchAlgorithmException | SignatureException | NoSuchProviderException | IOException e) {
+			e.printStackTrace();
 		}
 	}
 	
@@ -172,15 +169,12 @@ public class Main {
 	private static X509Certificate receiveCertificate() throws IOException, CertificateException {
 		System.out.println("Receiving certificate from connected client");
 		
-		int numBytes = input.readInt();
-		byte[] certAsBytes = new byte[numBytes];
-		int bytesRead = input.read(certAsBytes, 0, numBytes);
-		System.out.println("Number of bytes read: " + bytesRead);
+		byte[] certAsBytes = networkManager.readByteArray();
 		X509Certificate cert = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(certAsBytes));
 		System.out.println("Received certificate from connected client");
 		return cert;
 	}
-	
+
 	/**
 	 * Send clients certificate over the network to the connected client
 	 *
@@ -188,82 +182,21 @@ public class Main {
 	 */
 	private static void sendCertificate(X509Certificate cert) throws CertificateEncodingException, IOException {
 		System.out.println("Sending certificate");
-		
-		byte[] frame = cert.getEncoded();
-		output.writeInt(frame.length);
-		System.out.println("Length of encoded certificate (in bytes): " + frame.length);
-		output.write(frame);
-	}
-	
-	/**
-	 * Connects the current user to the server.
-	 */
-	private static void setupConnection() {
-		try {
-			clientSocket = new Socket(MACHINE_NAME, SERVER_PORT);
-		}
-		catch (IOException e) {
-			System.err.println("Error creating client socket.");
-			e.printStackTrace();
-		}
-	}
-	
-	/**
-	 * Sets up the data input and output streams over the clientSocket
-	 */
-	private static void setupIOStreams() {
-		try {
-			input = new DataInputStream(clientSocket.getInputStream());
-			output = new DataOutputStream(clientSocket.getOutputStream());
-		}
-		catch (IOException e) {
-			System.err.println("Error creating data stream connection");
-			e.printStackTrace();
-		}
-		catch (NullPointerException e) {
-			System.err.println("Please ensure a client has been started as a server before attempting to connect.");
-			e.printStackTrace();
-		}
-	}
-	
-	/**
-	 * Start the server as listening for a connection and connect to the clientSocket
-	 */
-	private static void startServer() {
-		ServerSocket listenSocket;
-		
-		try {
-			System.out.println("Waiting for client to connect...");
-			listenSocket = new ServerSocket(SERVER_PORT);
-			clientSocket = listenSocket.accept();
 
-//			ClientConnectThread clientConnectThread = new ClientConnectThread(clientSocket);
-//			clientConnectThread.start();
+		byte[] bytes = cert.getEncoded();
+		System.out.println("Length of encoded certificate (in bytes): " + bytes.length);
+		networkManager.writeByteArray(bytes);
+		System.out.println("certificate sent");
+		byte b = networkManager.readByte();
+		switch (b) {
+			case ProtocolUtils.CERT_VALID_BYTE:
+				System.out.println("our certificate was accepted");
+				break;
+			case ProtocolUtils.CERT_INVALID_BYTE:
+				System.out.println("our certificate was rejected");
+				networkManager.close();
+				System.exit(2);
+				break;
 		}
-		catch (IOException e) {
-			System.err.println("Error whilst opening listening socket/connecting client.");
-			e.printStackTrace();
-		}
-		
-	}
-	
-	/**
-	 * Creates two threads, one to deal with messages being sent to the server, by the client,
-	 * and one to deal with messages being sent to the client, by the server. Must be called after a successful
-	 * login has occurred.
-	 */
-	private static void createThreads() {
-		Thread readMsgThread = new Thread(() -> {
-			while (true) {
-
-			}
-		});
-		Thread sendMsgThread = new Thread(() -> {
-			while (true) {
-
-			}
-		});
-		readMsgThread.start();
-		sendMsgThread.start();
 	}
 }
