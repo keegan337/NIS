@@ -106,7 +106,7 @@ public class CryptoUtils {
 	 * @param encryptedKeyAndData received after encrypted data is sent to the user
 	 * @param privateKey the private key of the user
 	 */
-	public static byte[] decryptData(byte[] encryptedKeyAndData, PrivateKey privateKey) throws Exception {
+	public static byte[] decryptData(byte[] encryptedKeyAndData, PrivateKey privateKey) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException, IOException, DataFormatException {
 
 		//Calculate the portion of the byte [] sent to the method that is the secret key part
 		byte[] encryptedSecretKey = Arrays.copyOfRange(encryptedKeyAndData, 0, ENCRYPTED_SECRET_KEY_LENGTH);
@@ -151,7 +151,7 @@ public class CryptoUtils {
 	 * @param signedData the decompressed signed data that is received as a byte array
 	 * @param publicKey the public key of the connected client
 	 */
-	public static byte[] verifyAndExtractSignedData(byte[] signedData, PublicKey publicKey) throws Exception {
+	public static byte[] verifyAndExtractSignedData(byte[] signedData, PublicKey publicKey) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, InvalidSignatureException {
 		//Separate the signed hash of the message
 		byte[] signature = Arrays.copyOfRange(signedData, 0, SIGNATURE_LENGTH);
 
@@ -182,7 +182,7 @@ public class CryptoUtils {
 	 * @param data the data to be compressed
 	 * @param compressionType the strength of compression from 0-9
 	 */
-	public static byte[] compressData(byte[] data, int compressionType) throws IOException {
+	public static byte[] compressData(byte[] data, int compressionType) {
 		Deflater zipper = new Deflater(compressionType);
 
 		zipper.setInput(data);
@@ -213,7 +213,7 @@ public class CryptoUtils {
 	 *
 	 * @param data the data to be decompressed
 	 */
-	public static byte[] decompressData (byte[] data) throws IOException, DataFormatException {
+	public static byte[] decompressData (byte[] data) throws DataFormatException {
 		Inflater unzipper = new Inflater();
 
 		unzipper.setInput(data);

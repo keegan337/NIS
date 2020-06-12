@@ -15,6 +15,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Scanner;
+import java.util.zip.DataFormatException;
 
 
 public class Main {
@@ -105,7 +106,12 @@ public class Main {
 		System.out.println("Creating threads for sending and receiving of messages...");
 		networkManager.startAsyncReceiveThread(bytes -> {
 			//Decrypt message
-			bytes = CryptoUtils.decryptData(bytes, clientPrivateKey);
+			try {
+				bytes = CryptoUtils.decryptData(bytes, clientPrivateKey);
+			} catch (NoSuchPaddingException | InvalidAlgorithmParameterException | IOException | DataFormatException | IllegalBlockSizeException | BadPaddingException | InvalidKeyException | NoSuchAlgorithmException e) {
+				System.out.println("Could not decrypt message");
+				e.printStackTrace();
+			}
 			System.out.println("Decrypted data in bytes:");
 			System.out.println(new String(bytes));
 

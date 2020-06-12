@@ -1,3 +1,3 @@
 public interface BytesReceivedCallback {
-	void onBytesReceived(byte[] bytes) throws Exception;
+	void onBytesReceived(byte[] bytes);
 }
