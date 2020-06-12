@@ -82,6 +82,12 @@ public class CryptoUtils {
 
 	}
 
+	/**
+	 * Decrypt the data that is received as a byte array. This involves first separating the encrypted key portion and the data portion of the byte array. Then, the encrypted secret key is decrypted
+	 * with the private key. The secret key is then used to decrypt the data, which is then decompressed. A single initialization vector is used since the secret key changes with every message.
+	 * @param encryptedKeyAndData received after encrypted data is sent to the user
+	 * @param privateKey the private key of the user
+	 */
 	public static byte[] decryptData(byte[] encryptedKeyAndData, PrivateKey privateKey) throws Exception {
 
 		//Calculate the portion of the byte [] sent to the method that is the secret key part
@@ -137,42 +143,53 @@ public class CryptoUtils {
 	}
 
 	public static byte[] compressData(byte[] data, int compressionType) throws IOException {
-		Deflater compressor = new Deflater(compressionType);
+		Deflater zipper = new Deflater(compressionType);
 
-		compressor.setInput(data);
+		zipper.setInput(data);
 
-		compressor.finish();
+		zipper.finish();
 
-		ByteArrayOutputStream bao = new ByteArrayOutputStream();
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 		byte[] readBuffer = new byte[1024];
 		int readCount = 0;
 
-		while (!compressor.finished()) {
-			readCount = compressor.deflate(readBuffer);
+		while (!zipper.finished()) {
+
+			readCount = zipper.deflate(readBuffer);
+
 			if (readCount > 0) {
-				bao.write(readBuffer, 0, readCount);
+				byteArrayOutputStream.write(readBuffer, 0, readCount);
 			}
 		}
 
-		compressor.end();
-		return bao.toByteArray();
+		zipper.end();
+
+		return byteArrayOutputStream.toByteArray();
 	}
 
-	public static byte[] decompressData (byte[] input) throws IOException, DataFormatException {
-		Inflater decompressor = new Inflater();
-		decompressor.setInput(input);
-		ByteArrayOutputStream bao = new ByteArrayOutputStream();
+	public static byte[] decompressData (byte[] data) throws IOException, DataFormatException {
+		Inflater unzipper = new Inflater();
+
+		unzipper.setInput(data);
+
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+
 		byte[] readBuffer = new byte[1024];
+
 		int readCount = 0;
 
-		while (!decompressor.finished()) {
-			readCount = decompressor.inflate(readBuffer);
+		while (!unzipper.finished()) {
+
+			readCount = unzipper.inflate(readBuffer);
+
 			if (readCount > 0) {
-				bao.write(readBuffer, 0, readCount);
+				byteArrayOutputStream.write(readBuffer, 0, readCount);
 			}
 		}
-		decompressor.end();
-		return bao.toByteArray();
+
+		unzipper.end();
+
+		return byteArrayOutputStream.toByteArray();
 	}
 
 	public static class InvalidSignatureException extends Exception {
