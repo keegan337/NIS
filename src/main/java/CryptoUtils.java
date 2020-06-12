@@ -23,7 +23,13 @@ public class CryptoUtils {
 		outputStream.write(data);
 		return outputStream.toByteArray();
 	}
-	
+
+	/**
+	 * Encrypt the data that is received as a byte array. This involves zipping the data, generating a secret key, encrypting that secret key with the public key, and encrypting the seperate data with the secret key. Both of these encrypted data objects are then concatenated.
+	 *
+	 * @param data received after data is signed
+	 * @param publicKey the public key of the receiver
+	 */
 	public static byte[] encryptData (byte [] data, PublicKey publicKey) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, IOException, InvalidAlgorithmParameterException {
 
 		//compresses the data passed into the method with a zip algorithm

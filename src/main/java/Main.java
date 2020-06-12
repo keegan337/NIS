@@ -67,11 +67,6 @@ public class Main {
 		System.out.println("\nCA Public Key (from certificate):\n" + caCertificate.getPublicKey());
 
 		networkManager = new NetworkManager();
-		byte [] signedData = CryptoUtils.signData("Helloooooooooooooooooooooooooo!".getBytes(), clientPrivateKey);
-		byte [] encryptedData = CryptoUtils.encryptData(signedData, clientCertificate.getPublicKey());
-		byte [] decryptedData = CryptoUtils.decryptData(encryptedData, clientPrivateKey);
-		System.out.println(new String(CryptoUtils.verifyAndExtractSignedData(decryptedData, clientCertificate.getPublicKey())));
-
 
 //		Initial connection setup
 		if (args.length < 2) {
@@ -110,10 +105,7 @@ public class Main {
 		System.out.println("Creating threads for sending and receiving of messages...");
 		networkManager.startAsyncReceiveThread(bytes -> {
 			//Decrypt message
-			//TODO: bytes = CryptoUtils.decrypt(bytes, clientPrivateKey);
-
-			//Unzip message
-			//TODO: bytes = CryptoUtils.unzip(bytes)
+			bytes = CryptoUtils.decryptData(bytes, clientPrivateKey);
 
 			//Verify signature
 			try {
@@ -143,11 +135,8 @@ public class Main {
 			//Sign message
 			bytes = CryptoUtils.signData(bytes, clientPrivateKey);
 
-			//Zip message
-			//TODO: bytes = CryptoUtils.unzip(bytes)
-
 			//Encrypt message
-			//TODO: bytes = CryptoUtils.encrypt(bytes, connectedClientCertificate.getPublicKey());
+			bytes = CryptoUtils.encryptData(bytes, connectedClientCertificate.getPublicKey());
 
 			//Send message
 			networkManager.writeByteArray(bytes);
