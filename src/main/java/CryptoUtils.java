@@ -13,14 +13,32 @@ public class CryptoUtils {
 	public static final int SIGNATURE_LENGTH = 512; //SHA256withRSA signature is 512 bits
 	public static final int ENCRYPTED_SECRET_KEY_LENGTH = 512; //AES encoded encrypted key length is 512 bits
 
+
+	/**
+	 * Signing the hashed message and concatenating that signed hash with the actual message.
+	 *
+	 * @param data received data that is the byte array conversion of a string sent by a user
+	 * @param privateKey the private key of the user
+	 */
 	public static byte[] signData(byte[] data, PrivateKey privateKey) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, IOException {
+		//Returns a Signature object that implements the specified signature algorithm (SHA256withRSA)
 		Signature signer = Signature.getInstance("SHA256withRSA");
+
+		//Initialize this object for signing with the private key of the identity whose signature is going to be generated.
 		signer.initSign(privateKey);
+
+		//Updates the data to be signed or verified, using the specified array of bytes, which is the message converted into a byte array in this case.
 		signer.update(data);
+
+		//Hashes the data and signs it with the private key of the user
 		byte[] signature = signer.sign();
+
+		//Creates a new ByteArrayOutputStream, with a buffer capacity in bytes which is the size of the signature length added to the data length
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream(signature.length + data.length);
+
 		outputStream.write(signature);
 		outputStream.write(data);
+
 		return outputStream.toByteArray();
 	}
 
@@ -127,14 +145,29 @@ public class CryptoUtils {
 		return decompressedData;
 	}
 
+	/**
+	 * Receives the decrypted signed data that is verified by first separating the data into the encrypted hash of the message and the message itself.
+	 * The public key of the connected client is then used to decrypted the encrypted hash of the message, and it is compared to the hash of the separated message. If the hashes are equal, the original message is returned
+	 * @param signedData the decompressed signed data that is received as a byte array
+	 * @param publicKey the public key of the connected client
+	 */
 	public static byte[] verifyAndExtractSignedData(byte[] signedData, PublicKey publicKey) throws Exception {
+		//Separate the signed hash of the message
 		byte[] signature = Arrays.copyOfRange(signedData, 0, SIGNATURE_LENGTH);
+
+		//Separate the message
 		byte[] data = Arrays.copyOfRange(signedData, SIGNATURE_LENGTH, signedData.length);
 
+		//Returns a Signature object that implements the specified signature algorithm (SHA256withRSA)
 		Signature verifier = Signature.getInstance("SHA256withRSA");
+
+		//Initializes this object for verification with the public key of the identity whose signature is going to be verified.
 		verifier.initVerify(publicKey);
+
+		//Updates the data to be signed or verified, using the data array of bytes
 		verifier.update(data);
 
+		//If the signature is verified, return the data, otherwise throw an Invalid Signature Exception Error
 		if (verifier.verify(signature)) {
 			return data;
 		} else {
@@ -142,6 +175,13 @@ public class CryptoUtils {
 		}
 	}
 
+
+	/**
+	 * Compresses data with a zip algorithm at a specified strength
+	 *
+	 * @param data the data to be compressed
+	 * @param compressionType the strength of compression from 0-9
+	 */
 	public static byte[] compressData(byte[] data, int compressionType) throws IOException {
 		Deflater zipper = new Deflater(compressionType);
 
@@ -167,6 +207,12 @@ public class CryptoUtils {
 		return byteArrayOutputStream.toByteArray();
 	}
 
+	/**
+	 * Decompresses data with a zip algorithm
+	 *
+	 *
+	 * @param data the data to be decompressed
+	 */
 	public static byte[] decompressData (byte[] data) throws IOException, DataFormatException {
 		Inflater unzipper = new Inflater();
 
