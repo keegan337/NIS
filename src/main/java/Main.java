@@ -102,6 +102,7 @@ public class Main {
 		}
 
 		System.out.println("Mutual certificate exchange and validation successful");
+		System.out.println("You are talking to: " + connectedClientCertificate.getSubjectX500Principal());
 
 
 //		Create thread to receive messages asynchronously
@@ -120,7 +121,7 @@ public class Main {
 			}
 			catch (CryptoUtils.InvalidSignatureException e) {
 				System.out.println("WARNING: INVALID SIGNATURE");
-				System.out.println("This message was not signed by " + connectedClientCertificate.getSubjectX500Principal().getName());
+				System.out.println("This message was not signed by " + connectedClientCertificate.getSubjectX500Principal());
 			}
 			catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
 				e.printStackTrace();
