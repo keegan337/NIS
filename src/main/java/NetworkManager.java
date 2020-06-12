@@ -84,6 +84,8 @@ public class NetworkManager {
 			} catch (IOException e) {
 				System.out.println("stopped async receive thread");
 				System.exit(0);
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		});
 		readMsgThread.start();

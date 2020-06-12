@@ -116,9 +116,6 @@ public class CryptoUtils {
 	}
 
 	public static byte[] verifyAndExtractSignedData(byte[] signedData, PublicKey publicKey) throws Exception {
-		byte[] signature = Arrays.copyOfRange(signedData, 0, 512);
-		byte[] data = Arrays.copyOfRange(signedData, 512, signedData.length);
-	public static byte[] verifyAndExtractSignedData(byte[] signedData, PublicKey publicKey) throws InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
 		byte[] signature = Arrays.copyOfRange(signedData, 0, SIGNATURE_LENGTH);
 		byte[] data = Arrays.copyOfRange(signedData, SIGNATURE_LENGTH, signedData.length);
 
@@ -155,8 +152,7 @@ public class CryptoUtils {
 		return bao.toByteArray();
 	}
 
-	public static byte[] decompressData(byte[] input)
-			throws IOException, DataFormatException {
+	public static byte[] decompressData (byte[] input) throws IOException, DataFormatException {
 		Inflater decompressor = new Inflater();
 		decompressor.setInput(input);
 		ByteArrayOutputStream bao = new ByteArrayOutputStream();
