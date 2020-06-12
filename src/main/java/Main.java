@@ -1,5 +1,8 @@
 import org.bouncycastle.operator.OperatorCreationException;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -45,7 +48,7 @@ public class Main {
 	/**
 	 * @param args leave blank to run as server, otherwise provide ip and port to connect directly (1.2.3.4 1234)
 	 */
-	public static void main(String[] args) throws CertificateException, IOException, KeyStoreException, NoSuchAlgorithmException, UnrecoverableKeyException, OperatorCreationException {
+	public static void main(String[] args) throws Exception {
 		System.out.println("Please enter your username and password, if this is the first run enter a username and password of your choice");
 		String username = "alice";
 		String password = "123";
@@ -78,6 +81,10 @@ public class Main {
 		System.out.println("\nClient Private Key (from keystore):\n" + clientPrivateKey);
 		System.out.println("\nCA Public Key (from certificate):\n" + caCertificate.getPublicKey());
 
+		byte [] signedData = CryptoUtils.signData("Helloooooooooooooooooooooooooo!".getBytes(), clientPrivateKey);
+		byte [] encryptedData = CryptoUtils.encryptData(signedData, clientCertificate.getPublicKey());
+		byte [] decryptedData = CryptoUtils.decryptData(encryptedData, clientPrivateKey);
+		System.out.println(new String(CryptoUtils.verifyAndExtractSignedData(decryptedData, clientCertificate.getPublicKey())));
 
 //		Initial connection setup
 		if (args.length < 3) {
