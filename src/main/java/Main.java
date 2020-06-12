@@ -106,6 +106,8 @@ public class Main {
 		networkManager.startAsyncReceiveThread(bytes -> {
 			//Decrypt message
 			bytes = CryptoUtils.decryptData(bytes, clientPrivateKey);
+			System.out.println("Decrypted data in bytes:");
+			System.out.println(new String(bytes));
 
 			//Verify signature
 			try {
@@ -134,9 +136,13 @@ public class Main {
 
 			//Sign message
 			bytes = CryptoUtils.signData(bytes, clientPrivateKey);
+			System.out.println("Signed data in bytes:");
+			System.out.println(new String(bytes));
 
 			//Encrypt message
 			bytes = CryptoUtils.encryptData(bytes, connectedClientCertificate.getPublicKey());
+			System.out.println("Encrypted data in bytes:");
+			System.out.println(new String(bytes));
 
 			//Send message
 			networkManager.writeByteArray(bytes);
