@@ -118,6 +118,9 @@ public class CryptoUtils {
 	public static byte[] verifyAndExtractSignedData(byte[] signedData, PublicKey publicKey) throws Exception {
 		byte[] signature = Arrays.copyOfRange(signedData, 0, 512);
 		byte[] data = Arrays.copyOfRange(signedData, 512, signedData.length);
+	public static byte[] verifyAndExtractSignedData(byte[] signedData, PublicKey publicKey) throws InvalidSignatureException, NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+		byte[] signature = Arrays.copyOfRange(signedData, 0, SIGNATURE_LENGTH);
+		byte[] data = Arrays.copyOfRange(signedData, SIGNATURE_LENGTH, signedData.length);
 
 		Signature verifier = Signature.getInstance("SHA256withRSA");
 		verifier.initVerify(publicKey);
@@ -126,7 +129,7 @@ public class CryptoUtils {
 		if (verifier.verify(signature)) {
 			return data;
 		} else {
-			throw new Exception("Invalid Signature");
+			throw new InvalidSignatureException();
 		}
 	}
 
@@ -168,6 +171,12 @@ public class CryptoUtils {
 		}
 		decompressor.end();
 		return bao.toByteArray();
+	}
+
+	public static class InvalidSignatureException extends Exception {
+		public InvalidSignatureException() {
+			super("invalid signature");
+		}
 	}
 }
 

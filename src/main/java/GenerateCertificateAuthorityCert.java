@@ -13,6 +13,7 @@ import java.security.cert.X509Certificate;
 
 /**
  * Generates keys for the certificate authority.
+ * Generates and saves the CA's certificate.
  * These keys will be used to sign certificates for each user.
  */
 public class GenerateCertificateAuthorityCert {
@@ -29,26 +30,6 @@ public class GenerateCertificateAuthorityCert {
 		CertificateUtils.saveCertToDER(certHolder, "uct.der");
 
 		System.out.println("saving private key to file");
-		X509Certificate cert = new JcaX509CertificateConverter().getCertificate(certHolder);
-		Certificate[] certChain = new Certificate[]{cert};
-		CertificateUtils.saveToPKCS12(kp, certHolder, certChain, "uct", "123", "uct.p12", "123");
-	}
-
-	/**
-	 * generates and saves the CA's certificate
-	 */
-	public static void generateCertificateAuthorityCert() throws NoSuchAlgorithmException, IOException, CertificateException, KeyStoreException, OperatorCreationException {
-		// generate key pair
-		KeyPair kp = CertificateUtils.generateKeyPair();
-
-		// create certificate
-		X500Name name = CertificateUtils.getX500Name("ZA", "University of Cape Town", "Department of Computer Science", "dept@cs.uct.ac.za");
-		X509CertificateHolder certHolder = CertificateUtils.getX509CertificateHolder(kp.getPrivate(), kp.getPublic(), name, name);
-
-		// save certificate
-		CertificateUtils.saveCertToDER(certHolder, "uct.der");
-
-		// save private key
 		X509Certificate cert = new JcaX509CertificateConverter().getCertificate(certHolder);
 		Certificate[] certChain = new Certificate[]{cert};
 		CertificateUtils.saveToPKCS12(kp, certHolder, certChain, "uct", "123", "uct.p12", "123");

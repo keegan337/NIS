@@ -3,6 +3,7 @@ import org.bouncycastle.asn1.x500.X500NameBuilder;
 import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
@@ -11,15 +12,10 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.Date;
 
 public class CertificateUtils {
@@ -134,5 +130,37 @@ public class CertificateUtils {
 		KeyPair returnable = keyGen.generateKeyPair();
 		System.out.println("Key pair generated\nPublic Key:\n"+returnable.getPublic()+"\nPrivate Key:\n"+returnable.getPrivate());
 		return returnable;
+	}
+
+	/**
+	 * Generates a client certificate and saves it as a file
+	 * @param username the username of the client
+	 * @param password the client's password
+	 * @throws UnrecoverableKeyException
+	 * @throws CertificateException
+	 * @throws NoSuchAlgorithmException
+	 * @throws KeyStoreException
+	 * @throws IOException
+	 * @throws OperatorCreationException
+	 */
+	public static void generateClientCert(String username, String password) throws UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, OperatorCreationException {
+		CertificateAuthority ca = new CertificateAuthority();
+		X500NameBuilder nameBuilder = new X500NameBuilder();
+
+		nameBuilder.addRDN(BCStyle.NAME, username);
+
+		// generate key pair
+		KeyPair kp = CertificateUtils.generateKeyPair();
+
+		// generate signed certificate
+		X509CertificateHolder certHolder = ca.getSignedClientCertificate(kp.getPublic(), nameBuilder.build());
+		System.out.println("\nNew client certificate created for "+username);
+
+		// save cert and keys to file
+		JcaX509CertificateConverter converter = new JcaX509CertificateConverter();
+		X509Certificate caCert = converter.getCertificate(ca.getCaCertHolder());
+		X509Certificate clientCert = converter.getCertificate(certHolder);
+		Certificate[] certChain = new Certificate[]{clientCert, caCert};
+		CertificateUtils.saveToPKCS12(kp, certHolder, certChain, username, password, username + ".p12", password);
 	}
 }
