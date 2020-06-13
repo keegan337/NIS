@@ -19,9 +19,9 @@ import java.security.cert.X509Certificate;
 import java.util.Date;
 
 public class CertificateUtils {
-
-	public static final long millisecondMonth = 1000L * 60 * 60 * 24 * 30;
-
+	
+	public static final long millisecondMonth=1000L*60*60*24*30;
+	
 	public static KeyStore loadKeyStoreFromPKCS12(String fileName, String password) throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException {
 		FileInputStream inputStream = new FileInputStream(fileName);
 		KeyStore store = KeyStore.getInstance("PKCS12");
@@ -29,7 +29,7 @@ public class CertificateUtils {
 		inputStream.close();
 		return store;
 	}
-
+	
 	/**
 	 * Save a given certificate to a file for later use
 	 *
@@ -43,18 +43,18 @@ public class CertificateUtils {
 		fileOutputStream.flush();
 		fileOutputStream.close();
 	}
-
+	
 	/**
 	 * The private key is saved in a password-protected file called a keystore.
 	 * A keystore can contain many keys and each key is protected with its own password.
 	 * In this case we are only saving one key into this keystore, Eg: the certificate authority's private key.
 	 *
-	 * @param kp                KeyPair containing the private key to be stored
-	 * @param certHolder        containing the public key for the kp
-	 * @param storeKeyAlias     Alias name for key
-	 * @param storeKeyPassword  to protect the key
-	 * @param filename          to save the store as (uct.p12 for CA)
-	 * @param storePassword     the password to generate the keystore integrity check
+	 * @param kp               KeyPair containing the private key to be stored
+	 * @param certHolder       containing the public key for the kp
+	 * @param storeKeyAlias    Alias name for key
+	 * @param storeKeyPassword to protect the key
+	 * @param filename         to save the store as (uct.p12 for CA)
+	 * @param storePassword    the password to generate the keystore integrity check
 	 * @throws KeyStoreException
 	 * @throws IOException
 	 * @throws NoSuchAlgorithmException
@@ -63,16 +63,16 @@ public class CertificateUtils {
 	public static void saveToPKCS12(KeyPair kp, X509CertificateHolder certHolder, Certificate[] certificateChain, String storeKeyAlias, String storeKeyPassword, String filename, String storePassword) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
 		KeyStore store = KeyStore.getInstance("PKCS12");
 		store.load(null, null); //create empty keystore
-
+		
 		//Here we specify the password for the key
 		store.setKeyEntry(storeKeyAlias, kp.getPrivate(), storeKeyPassword.toCharArray(), certificateChain);
-
+		
 		FileOutputStream fileOutputStream = new FileOutputStream(filename);
 		store.store(fileOutputStream, storePassword.toCharArray()); //Here we specify the password for the keystore
 		fileOutputStream.flush();
 		fileOutputStream.close();
 	}
-
+	
 	/**
 	 * Generate an X509 certificate given a key pair and x500 name
 	 *
@@ -87,16 +87,16 @@ public class CertificateUtils {
 		X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(
 				issuerName,
 				BigInteger.valueOf(1),
-				new Date(System.currentTimeMillis() - millisecondMonth),
-				new Date(System.currentTimeMillis() + millisecondMonth),
+				new Date(System.currentTimeMillis() - millisecondMonth * 6),
+				new Date(System.currentTimeMillis() + millisecondMonth * 6),
 				subjectName,
 				subjectPublicKey
 		);
-
+		
 		//Sign the certificate using the issuer's private key (with the SHA1withRSA signing algorithm)
 		return certGen.build(new JcaContentSignerBuilder("SHA1withRSA").build(issuerPrivateKey));
 	}
-
+	
 	/**
 	 * Generates an X500 formatted name for use in X509CertificateHolder's
 	 *
@@ -108,15 +108,15 @@ public class CertificateUtils {
 	 */
 	public static X500Name getX500Name(String countryCode, String organisation, String organisationalUnit, String email) {
 		X500NameBuilder nameBuilder = new X500NameBuilder();
-
+		
 		nameBuilder.addRDN(BCStyle.C, countryCode);
 		nameBuilder.addRDN(BCStyle.O, organisation);
 		nameBuilder.addRDN(BCStyle.OU, organisationalUnit);
 		nameBuilder.addRDN(BCStyle.EmailAddress, email); //Dont think this is strictly necessary
-
+		
 		return nameBuilder.build();
 	}
-
+	
 	/**
 	 * Generate a Public/Private Key Pair using RSA4096
 	 *
@@ -128,12 +128,13 @@ public class CertificateUtils {
 		KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
 		keyGen.initialize(4096);
 		KeyPair returnable = keyGen.generateKeyPair();
-		System.out.println("Key pair generated\nPublic Key:\n"+returnable.getPublic()+"\nPrivate Key:\n"+returnable.getPrivate());
+		System.out.println("Key pair generated\nPublic Key:\n" + returnable.getPublic() + "\nPrivate Key:\n" + returnable.getPrivate());
 		return returnable;
 	}
-
+	
 	/**
 	 * Generates a client certificate and saves it as a file
+	 *
 	 * @param username the username of the client
 	 * @param password the client's password
 	 * @throws UnrecoverableKeyException
@@ -146,16 +147,16 @@ public class CertificateUtils {
 	public static void generateClientCert(String username, String password) throws UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, OperatorCreationException {
 		CertificateAuthority ca = new CertificateAuthority();
 		X500NameBuilder nameBuilder = new X500NameBuilder();
-
+		
 		nameBuilder.addRDN(BCStyle.NAME, username);
-
+		
 		// generate key pair
 		KeyPair kp = CertificateUtils.generateKeyPair();
-
+		
 		// generate signed certificate
 		X509CertificateHolder certHolder = ca.getSignedClientCertificate(kp.getPublic(), nameBuilder.build());
-		System.out.println("\nNew client certificate created for "+username);
-
+		System.out.println("\nNew client certificate created for " + username);
+		
 		// save cert and keys to file
 		JcaX509CertificateConverter converter = new JcaX509CertificateConverter();
 		X509Certificate caCert = converter.getCertificate(ca.getCaCertHolder());
