@@ -9,28 +9,29 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
+import java.security.cert.*;
 import java.security.cert.Certificate;
-import java.security.cert.CertificateEncodingException;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.util.Scanner;
 import java.util.zip.DataFormatException;
 
-
-public class Main {
+/**
+ * Tests sending messages with forged signatures (signatures generated with a different private key to the user)
+ * Use this "fake messenger" to connect to a client that is using the real messenger
+ * The real messenger app should detect and reject the forged signature
+ */
+public class TestSendForgedMessage {
 	private static int SERVER_PORT = 9000;
 	private static String MACHINE_NAME = "localhost";
 	private static NetworkManager networkManager;
-	
+
 	private static X509Certificate caCertificate; //CA cert
 	private static X509Certificate clientCertificate; // MY cert
 	private static X509Certificate connectedClientCertificate; // THEIR cert
-	
+
 	private static PrivateKey clientPrivateKey; //MY private key
-	
+
 	private static final Scanner in = new Scanner(System.in);
-	
+
 	/**
 	 * @param args leave blank to run as server, otherwise provide ip and port to connect directly (1.2.3.4 1234)
 	 */
@@ -48,14 +49,14 @@ public class Main {
 		if (line.length() > 0) {
 			password = line;
 		}
-		
+
 		System.out.println("Username = " + username);
 		System.out.println("Password = " + password);
-		
+
 		System.out.println();
 		ensureCertificateExists(username, password);
-        
-        System.out.println();
+
+		System.out.println();
 		System.out.println("Reading client and CA certificates and client private keys from keystore on disk:");
 		KeyStore store = CertificateUtils.loadKeyStoreFromPKCS12(username + ".p12", password);
 		Certificate[] certChain = store.getCertificateChain(username);
@@ -121,9 +122,8 @@ public class Main {
 				bytes = CryptoUtils.verifyAndExtractSignedData(bytes, connectedClientCertificate.getPublicKey());
 			}
 			catch (CryptoUtils.InvalidSignatureException e) {
-				System.out.println("INVALID SIGNATURE");
+				System.out.println("WARNING: INVALID SIGNATURE");
 				System.out.println("This message was not signed by " + connectedClientCertificate.getSubjectX500Principal());
-				return;
 			}
 			catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
 				e.printStackTrace();
@@ -133,18 +133,20 @@ public class Main {
 			System.out.println("message received: " + new String(bytes, StandardCharsets.UTF_8));
 		});
 		System.out.println("Threads created");
-		
-		
+
+
 		String inputLine = "";
-		
+
 		while (!inputLine.equals("EXIT")) {
 			System.out.println("enter a message to send:");
 			inputLine = in.nextLine();
 			byte[] bytes = inputLine.getBytes();
 
 			//Sign message
-			bytes = CryptoUtils.signData(bytes, clientPrivateKey);
-			System.out.println("Signed data in bytes:");
+			//TESTING NOTE: THIS IS A FORGED MESSAGE -- the signature does not use our private key
+			System.out.println("Creating forged signature");
+			bytes = CryptoUtils.signData(bytes, CertificateUtils.generateKeyPair().getPrivate());
+			System.out.println("Signed forged data in bytes:");
 			System.out.println(new String(bytes));
 
 			//Encrypt message
@@ -158,12 +160,12 @@ public class Main {
 
 		networkManager.close();
 	}
-	
+
 	/**
 	 * Checks for a keystore (.p12 file) for the given username, and generates a new client certificate if missing.
 	 *
-	 * @param username the username of the current user
-	 * @param password the password of the current user
+	 * @param username
+	 * @param password
 	 */
 	private static void ensureCertificateExists(String username, String password) throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, OperatorCreationException, IOException {
 		System.out.println("Checking for keystore for " + username);
@@ -176,9 +178,9 @@ public class Main {
 			System.out.println("Keystore found");
 		}
 	}
-	
+
 	/**
-	 * Hash the certificate using SHA256 and compare with the CA signed certificate hash. Use local CA PubKey Copy
+	 * Hash the certificate using (algorithm) and compare with the CA signed certificate hash. Use local CA PubKey Copy
 	 *
 	 * @param cert received from connected client
 	 */
@@ -187,7 +189,7 @@ public class Main {
 		try {
 			cert.verify(caCertificate.getPublicKey());
 			System.out.println("Certificate validated successfully");
-			networkManager.writeByte(ProtocolUtils.CERT_ACCEPTED_BYTE);
+			networkManager.writeByte(ProtocolUtils.CERT_VALID_BYTE);
 		}
 		catch (SignatureException e) {
 			System.out.println("Invalid Certificate, closing connection.");
@@ -196,7 +198,7 @@ public class Main {
 			System.exit(2);
 		}
 	}
-	
+
 	/**
 	 * Receive the connected client's certificate over the network.
 	 *
@@ -204,7 +206,7 @@ public class Main {
 	 */
 	private static X509Certificate receiveCertificate() throws IOException, CertificateException {
 		System.out.println("Receiving certificate from connected client");
-		
+
 		byte[] certAsBytes = networkManager.readByteArray();
 		X509Certificate cert = (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(new ByteArrayInputStream(certAsBytes));
 		System.out.println("Received certificate from connected client");
@@ -214,7 +216,7 @@ public class Main {
 	/**
 	 * Send clients certificate over the network to the connected client
 	 *
-	 * @param cert the certificate to be sent.
+	 * @param cert to be sent.
 	 */
 	private static void sendCertificate(X509Certificate cert) throws CertificateEncodingException, IOException {
 		System.out.println("Sending certificate");
@@ -225,10 +227,10 @@ public class Main {
 		System.out.println("certificate sent");
 		byte b = networkManager.readByte();
 		switch (b) {
-			case ProtocolUtils.CERT_ACCEPTED_BYTE:
+			case ProtocolUtils.CERT_VALID_BYTE:
 				System.out.println("our certificate was accepted");
 				break;
-			case ProtocolUtils.CERT_REJECTED_BYTE:
+			case ProtocolUtils.CERT_INVALID_BYTE:
 				System.out.println("our certificate was rejected");
 				networkManager.close();
 				System.exit(2);
