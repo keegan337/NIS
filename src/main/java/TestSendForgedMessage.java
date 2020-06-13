@@ -16,6 +16,7 @@ import java.util.zip.DataFormatException;
 
 /**
  * Tests sending messages with forged signatures (signatures generated with a different private key to the user)
+ * See line 148 for changes.
  * Use this "fake messenger" to connect to a client that is using the real messenger
  * The real messenger app should detect and reject the forged signature
  */
