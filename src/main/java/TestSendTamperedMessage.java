@@ -16,6 +16,7 @@ import java.util.zip.DataFormatException;
 
 /**
  * This is a fake client that simulates an attacker tampering with it's messages before they are encrypted.
+ * Please send messages with at least 5 characters to avoid errors.
  * See line 151 for changes made.
  * Use this "fake messenger" to connect to a client that is using the real messenger
  * The real messenger app should detect that the message was tampered with (based on the signature) and reject it.
