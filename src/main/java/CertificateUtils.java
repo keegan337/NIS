@@ -158,10 +158,14 @@ public class CertificateUtils {
 		System.out.println("\nNew client certificate created for " + username);
 		
 		// save cert and keys to file
+		System.out.println("saving certificate and keys to file");
 		JcaX509CertificateConverter converter = new JcaX509CertificateConverter();
 		X509Certificate caCert = converter.getCertificate(ca.getCaCertHolder());
 		X509Certificate clientCert = converter.getCertificate(certHolder);
 		Certificate[] certChain = new Certificate[]{clientCert, caCert};
 		CertificateUtils.saveToPKCS12(kp, certHolder, certChain, username, password, username + ".p12", password);
+
+		System.out.println("saving certificate to file");
+		CertificateUtils.saveCertToDER(certHolder, username + ".der");
 	}
 }
