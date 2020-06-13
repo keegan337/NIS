@@ -123,8 +123,9 @@ public class TestSendForgedMessage {
 				bytes = CryptoUtils.verifyAndExtractSignedData(bytes, connectedClientCertificate.getPublicKey());
 			}
 			catch (CryptoUtils.InvalidSignatureException e) {
-				System.out.println("WARNING: INVALID SIGNATURE");
+				System.out.println("INVALID SIGNATURE");
 				System.out.println("This message was not signed by " + connectedClientCertificate.getSubjectX500Principal());
+				return;
 			}
 			catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
 				e.printStackTrace();
@@ -165,8 +166,8 @@ public class TestSendForgedMessage {
 	/**
 	 * Checks for a keystore (.p12 file) for the given username, and generates a new client certificate if missing.
 	 *
-	 * @param username
-	 * @param password
+	 * @param username the username of the current user
+	 * @param password the password of the current user
 	 */
 	private static void ensureCertificateExists(String username, String password) throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, OperatorCreationException, IOException {
 		System.out.println("Checking for keystore for " + username);
@@ -181,7 +182,7 @@ public class TestSendForgedMessage {
 	}
 
 	/**
-	 * Hash the certificate using (algorithm) and compare with the CA signed certificate hash. Use local CA PubKey Copy
+	 * Hash the certificate using SHA256 and compare with the CA signed certificate hash. Use local CA PubKey Copy
 	 *
 	 * @param cert received from connected client
 	 */
@@ -217,7 +218,7 @@ public class TestSendForgedMessage {
 	/**
 	 * Send clients certificate over the network to the connected client
 	 *
-	 * @param cert to be sent.
+	 * @param cert the certificate to be sent.
 	 */
 	private static void sendCertificate(X509Certificate cert) throws CertificateEncodingException, IOException {
 		System.out.println("Sending certificate");
