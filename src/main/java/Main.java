@@ -111,6 +111,7 @@ public class Main {
 			} catch (NoSuchPaddingException | InvalidAlgorithmParameterException | IOException | DataFormatException | IllegalBlockSizeException | BadPaddingException | InvalidKeyException | NoSuchAlgorithmException e) {
 				System.out.println("Could not decrypt message");
 				e.printStackTrace();
+				return;
 			}
 			System.out.println("Decrypted data in bytes:");
 			System.out.println(new String(bytes));
@@ -180,25 +181,18 @@ public class Main {
 	 *
 	 * @param cert received from connected client
 	 */
-	private static void validateCertificate(X509Certificate cert) {
+	private static void validateCertificate(X509Certificate cert) throws IOException, NoSuchProviderException, CertificateException, NoSuchAlgorithmException, InvalidKeyException {
 		System.out.println("Validating certificate received was signed by the trusted Certificate Authority:");
 		try {
 			cert.verify(caCertificate.getPublicKey());
 			System.out.println("Certificate validated successfully");
 			networkManager.writeByte(ProtocolUtils.CERT_VALID_BYTE);
 		}
-		catch (InvalidKeyException e) {
+		catch (SignatureException e) {
 			System.out.println("Invalid Certificate, closing connection.");
-			try {
-				networkManager.writeByte(ProtocolUtils.CERT_INVALID_BYTE);
-				networkManager.close();
-				System.exit(2);
-			}
-			catch (IOException ioException) {
-				ioException.printStackTrace();
-			}
-		} catch (CertificateException | NoSuchAlgorithmException | SignatureException | NoSuchProviderException | IOException e) {
-			e.printStackTrace();
+			networkManager.writeByte(ProtocolUtils.CERT_INVALID_BYTE);
+			networkManager.close();
+			System.exit(2);
 		}
 	}
 	
