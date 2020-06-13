@@ -20,7 +20,7 @@ import java.util.zip.DataFormatException;
  * This test simulates the worst case: that an attacker manages to manipulate the encrypted message so that it decrypts to a valid format.
  * The signature check should then detect that the message has been tampered with.
  * Please send messages with at least 5 characters to avoid errors.
- * See line 151 for changes made.
+ * See line 156 for changes made.
  * Use this "fake messenger" to connect to a client that is using the real messenger
  * The real messenger app should detect that the message was tampered with (based on the signature) and reject it.
  */
