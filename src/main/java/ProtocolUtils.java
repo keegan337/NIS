@@ -1,4 +1,4 @@
 public class ProtocolUtils {
-	public final static byte CERT_VALID_BYTE = 0;
-	public final static byte CERT_INVALID_BYTE = 1;
+	public final static byte CERT_ACCEPTED_BYTE = 0;
+	public final static byte CERT_REJECTED_BYTE = 1;
 }

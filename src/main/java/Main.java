@@ -160,8 +160,8 @@ public class Main {
 	/**
 	 * Checks for a keystore (.p12 file) for the given username, and generates a new client certificate if missing.
 	 *
-	 * @param username
-	 * @param password
+	 * @param username the username of the current user
+	 * @param password the password of the current user
 	 */
 	private static void ensureCertificateExists(String username, String password) throws CertificateException, UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException, OperatorCreationException, IOException {
 		System.out.println("Checking for keystore for " + username);
@@ -176,7 +176,7 @@ public class Main {
 	}
 	
 	/**
-	 * Hash the certificate using (algorithm) and compare with the CA signed certificate hash. Use local CA PubKey Copy
+	 * Hash the certificate using SHA256 and compare with the CA signed certificate hash. Use local CA PubKey Copy
 	 *
 	 * @param cert received from connected client
 	 */
@@ -185,12 +185,12 @@ public class Main {
 		try {
 			cert.verify(caCertificate.getPublicKey());
 			System.out.println("Certificate validated successfully");
-			networkManager.writeByte(ProtocolUtils.CERT_VALID_BYTE);
+			networkManager.writeByte(ProtocolUtils.CERT_ACCEPTED_BYTE);
 		}
 		catch (InvalidKeyException e) {
 			System.out.println("Invalid Certificate, closing connection.");
 			try {
-				networkManager.writeByte(ProtocolUtils.CERT_INVALID_BYTE);
+				networkManager.writeByte(ProtocolUtils.CERT_REJECTED_BYTE);
 				networkManager.close();
 				System.exit(2);
 			}
@@ -219,7 +219,7 @@ public class Main {
 	/**
 	 * Send clients certificate over the network to the connected client
 	 *
-	 * @param cert to be sent.
+	 * @param cert the certificate to be sent.
 	 */
 	private static void sendCertificate(X509Certificate cert) throws CertificateEncodingException, IOException {
 		System.out.println("Sending certificate");
@@ -230,10 +230,10 @@ public class Main {
 		System.out.println("certificate sent");
 		byte b = networkManager.readByte();
 		switch (b) {
-			case ProtocolUtils.CERT_VALID_BYTE:
+			case ProtocolUtils.CERT_ACCEPTED_BYTE:
 				System.out.println("our certificate was accepted");
 				break;
-			case ProtocolUtils.CERT_INVALID_BYTE:
+			case ProtocolUtils.CERT_REJECTED_BYTE:
 				System.out.println("our certificate was rejected");
 				networkManager.close();
 				System.exit(2);

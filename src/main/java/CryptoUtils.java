@@ -63,22 +63,25 @@ public class CryptoUtils {
 		keyGenerator.init(256);
 
 		//Generate the secret key
-		SecretKey skey = keyGenerator.generateKey();
+		SecretKey secretKey = keyGenerator.generateKey();
 
 		//Get the encoded version of the secret key
-		byte[] encodedSecretKey = skey.getEncoded();
+		byte[] encodedSecretKey = secretKey.getEncoded();
 
 		//Specifies an initialization vector to use for the symmetric cipher
 		byte[] iv = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-		IvParameterSpec ivspec = new IvParameterSpec(iv);
+		IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
 
 		//Initializes this cipher with the secret key and the IV.
-		symmetricCipher.init(Cipher.ENCRYPT_MODE, skey, ivspec);
+		symmetricCipher.init(Cipher.ENCRYPT_MODE, secretKey, ivParameterSpec);
 
 		//Encrypting the data
 		byte[] encryptedData = symmetricCipher.doFinal(compressedData);
 
-		//Provides the functionality of a cryptographic cipher which we will use for encryption, which in this case is set to use the RSA algorithm in ECB mode with PKCS1 padding.
+		/*
+			Provides the functionality of a cryptographic cipher which we will use for encryption, which in this case is set to use the RSA
+			algorithm in ECB mode with PKCS1 padding.
+		 */
 		Cipher asymmetricCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 
 		//Initializes this cipher with the public key.
@@ -101,8 +104,9 @@ public class CryptoUtils {
 	}
 
 	/**
-	 * Decrypt the data that is received as a byte array. This involves first separating the encrypted key portion and the data portion of the byte array. Then, the encrypted secret key is decrypted
-	 * with the private key. The secret key is then used to decrypt the data, which is then decompressed. A single initialization vector is used since the secret key changes with every message.
+	 * Decrypt the data that is received as a byte array. This involves first separating the encrypted key portion and the data portion of the byte array.
+	 * Then, the encrypted secret key is decrypted with the private key. The secret key is then used to decrypt the data, which is then decompressed.
+	 * A single initialization vector is used since the secret key changes with every message.
 	 * @param encryptedKeyAndData received after encrypted data is sent to the user
 	 * @param privateKey the private key of the user
 	 */
@@ -116,9 +120,12 @@ public class CryptoUtils {
 
 		//Specifies an initialization vector to use for the symmetric cipher
 		byte[] iv = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-		IvParameterSpec ivspec = new IvParameterSpec(iv);
+		IvParameterSpec ivParameterSpec = new IvParameterSpec(iv);
 
-		//Provides the functionality of a cryptographic cipher which we will use for decryption, which in this case is set to use the RSA algorithm in ECB mode with PKCS1 padding.
+		/*
+			Provides the functionality of a cryptographic cipher which we will use for decryption, which in this case is set to use the RSA algorithm in
+			ECB mode with PKCS1 padding.
+		 */
 		Cipher asymmetricCipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 
 		//Initializes this cipher with the private key.
@@ -130,11 +137,14 @@ public class CryptoUtils {
 		//Create the secret key from the byte array, using the AES algorithm
 		SecretKeySpec secretKeySpec = new SecretKeySpec(decryptedSecretKey, "AES");
 
-		//Provides the functionality of a cryptographic cipher which we will use for decryption, which in this case is set to use the AES algorithm in CBC mode with PKCS5 padding.
+		/*
+			Provides the functionality of a cryptographic cipher which we will use for decryption, which in this case is set to use the AES algorithm
+			in CBC mode with PKCS5 padding.
+		 */
 		Cipher symmetricCipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 
 		//Initializes this cipher with the secret key and the IV.
-		symmetricCipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivspec);
+		symmetricCipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivParameterSpec);
 
 		//Decrypt the data part and store in a byte array
 		byte[] decryptedData = symmetricCipher.doFinal(encryptedData);
@@ -147,9 +157,10 @@ public class CryptoUtils {
 
 	/**
 	 * Receives the decrypted signed data that is verified by first separating the data into the encrypted hash of the message and the message itself.
-	 * The public key of the connected client is then used to decrypted the encrypted hash of the message, and it is compared to the hash of the separated message. If the hashes are equal, the original message is returned
+	 * The public key of the connected client is then used to decrypted the encrypted hash of the message, and it is compared to the hash of the
+	 * separated message. If the hashes are equal, the original message is returned
 	 * @param signedData the decompressed signed data that is received as a byte array
-	 * @param publicKey the public key of the connected client
+	 * @param publicKey the public key of the connected client (the sender)
 	 */
 	public static byte[] verifyAndExtractSignedData(byte[] signedData, PublicKey publicKey) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, InvalidSignatureException {
 		//Separate the signed hash of the message
@@ -167,7 +178,11 @@ public class CryptoUtils {
 		//Updates the data to be signed or verified, using the data array of bytes
 		verifier.update(data);
 
-		//If the signature is verified, return the data, otherwise throw an Invalid Signature Exception Error
+		/*
+			If the signature is verified, return the data, otherwise throw an Invalid Signature Exception Error.
+			The .verify() method decrypts the signature using the sender’s public key to
+			get a hash of the message, computes a hash of the received message and compares these two results
+		 */
 		if (verifier.verify(signature)) {
 			return data;
 		} else {
@@ -209,7 +224,6 @@ public class CryptoUtils {
 
 	/**
 	 * Decompresses data with a zip algorithm
-	 *
 	 *
 	 * @param data the data to be decompressed
 	 */
