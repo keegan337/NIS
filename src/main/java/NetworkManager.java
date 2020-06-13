@@ -92,4 +92,12 @@ public class NetworkManager {
 	public void close() throws IOException {
 		socket.close();
 	}
+
+	public interface BytesReceivedCallback {
+		/**
+		 * Callback for when a message is received in a background thread in the NetworkManager
+		 * @param bytes the received message data
+		 */
+		void onBytesReceived(byte[] bytes);
+	}
 }
