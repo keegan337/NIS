@@ -121,8 +121,9 @@ public class Main {
 				bytes = CryptoUtils.verifyAndExtractSignedData(bytes, connectedClientCertificate.getPublicKey());
 			}
 			catch (CryptoUtils.InvalidSignatureException e) {
-				System.out.println("WARNING: INVALID SIGNATURE");
+				System.out.println("INVALID SIGNATURE");
 				System.out.println("This message was not signed by " + connectedClientCertificate.getSubjectX500Principal());
+				return;
 			}
 			catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
 				e.printStackTrace();
