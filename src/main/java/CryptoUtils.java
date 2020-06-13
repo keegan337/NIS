@@ -255,6 +255,9 @@ public class CryptoUtils {
 		return byteArrayOutputStream.toByteArray();
 	}
 
+	/**
+	 * Exception to be thrown which signature validation fails
+	 */
 	public static class InvalidSignatureException extends Exception {
 		public InvalidSignatureException() {
 			super("invalid signature");
