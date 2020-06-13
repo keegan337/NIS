@@ -17,6 +17,9 @@ import java.security.cert.X509Certificate;
 import java.util.Scanner;
 import java.util.zip.DataFormatException;
 
+/**
+ * Used to run the messaging application
+ */
 
 public class Main {
 	private static int SERVER_PORT = 9000;

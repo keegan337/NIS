@@ -9,10 +9,13 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
+/**
+ * A utility class involved in encrypting and decrypting data as well as signing data and validating signatures.
+ * Additionally it compresses and decompresses data.
+ */
 public class CryptoUtils {
 	public static final int SIGNATURE_LENGTH = 512; //SHA256withRSA signature is 512 bits
 	public static final int ENCRYPTED_SECRET_KEY_LENGTH = 512; //AES encoded encrypted key length is 512 bits
-
 
 	/**
 	 * Signing the hashed message and concatenating that signed hash with the actual message.

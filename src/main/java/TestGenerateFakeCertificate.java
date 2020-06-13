@@ -27,16 +27,16 @@ public class TestGenerateFakeCertificate {
 
 	public static void main(String[] args) throws NoSuchAlgorithmException, OperatorCreationException, CertificateException, IOException, KeyStoreException {
 		// generate fake ca certificate
-		X500Name name = CertificateUtils.getX500Name("ZA", "University of Cape Town", "Department of Computer Science", "dept@cs.uct.ac.za");
+		X500Name name = CertificateUtils.generateX500Name("ZA", "University of Cape Town", "Department of Computer Science", "dept@cs.uct.ac.za");
 		KeyPair kp = CertificateUtils.generateKeyPair();
 		fakeCaPrivateKey = kp.getPrivate();
-		fakeCaCert = CertificateUtils.getX509CertificateHolder(kp.getPrivate(), kp.getPublic(), name, name);
+		fakeCaCert = CertificateUtils.generateX509CertificateHolder(kp.getPrivate(), kp.getPublic(), name, name);
 
 		// generate fake alice certificate
 		X500NameBuilder nameBuilder = new X500NameBuilder();
 		nameBuilder.addRDN(BCStyle.NAME, "alice");
 		KeyPair fakeAliceKP = CertificateUtils.generateKeyPair();
-		X509CertificateHolder certHolder = CertificateUtils.getX509CertificateHolder(fakeCaPrivateKey, fakeAliceKP.getPublic(), fakeCaCert.getSubject(), nameBuilder.build());
+		X509CertificateHolder certHolder = CertificateUtils.generateX509CertificateHolder(fakeCaPrivateKey, fakeAliceKP.getPublic(), fakeCaCert.getSubject(), nameBuilder.build());
 
 		// save cert and keys to file
 		JcaX509CertificateConverter converter = new JcaX509CertificateConverter();

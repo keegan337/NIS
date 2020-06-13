@@ -18,10 +18,20 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 
+/**
+ * A utility class containing methods to create, store and load certificates and related objects as well as get information
+ * about certificates
+ */
 public class CertificateUtils {
-	
+	//The length of a month in milliseconds
 	public static final long millisecondMonth=1000L*60*60*24*30;
-	
+
+	/**
+	 * Creates a keystore from a .p12 file
+	 * @param fileName the named of the file to be loaded
+	 * @param password the specific clients's password
+	 * @return
+	 */
 	public static KeyStore loadKeyStoreFromPKCS12(String fileName, String password) throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException {
 		FileInputStream inputStream = new FileInputStream(fileName);
 		KeyStore store = KeyStore.getInstance("PKCS12");
@@ -33,9 +43,8 @@ public class CertificateUtils {
 	/**
 	 * Save a given certificate to a file for later use
 	 *
-	 * @param certHolder certificate
+	 * @param certHolder certificate holder object for the certificate to be saved
 	 * @param fileName   to store certificate as (eg: uct.der for CA)
-	 * @throws IOException
 	 */
 	public static void saveCertToDER(X509CertificateHolder certHolder, String fileName) throws IOException {
 		FileOutputStream fileOutputStream = new FileOutputStream(fileName);
@@ -55,10 +64,6 @@ public class CertificateUtils {
 	 * @param storeKeyPassword to protect the key
 	 * @param filename         to save the store as (uct.p12 for CA)
 	 * @param storePassword    the password to generate the keystore integrity check
-	 * @throws KeyStoreException
-	 * @throws IOException
-	 * @throws NoSuchAlgorithmException
-	 * @throws CertificateException
 	 */
 	public static void saveToPKCS12(KeyPair kp, X509CertificateHolder certHolder, Certificate[] certificateChain, String storeKeyAlias, String storeKeyPassword, String filename, String storePassword) throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException {
 		KeyStore store = KeyStore.getInstance("PKCS12");
@@ -76,14 +81,13 @@ public class CertificateUtils {
 	/**
 	 * Generate an X509 certificate given a key pair and x500 name
 	 *
-	 * @param issuerPrivateKey
-	 * @param subjectPublicKey
-	 * @param issuerName
-	 * @param subjectName
-	 * @return The X509Certificate Holder
-	 * @throws OperatorCreationException
+	 * @param issuerPrivateKey private key of the certificate issuer
+	 * @param subjectPublicKey public key of actual certificate owner
+	 * @param issuerName name of certificate issuer
+	 * @param subjectName name of actual certificate owner
+	 * @return The X509CertificateHolder object for the created certificate
 	 */
-	public static X509CertificateHolder getX509CertificateHolder(PrivateKey issuerPrivateKey, PublicKey subjectPublicKey, X500Name issuerName, X500Name subjectName) throws OperatorCreationException {
+	public static X509CertificateHolder generateX509CertificateHolder(PrivateKey issuerPrivateKey, PublicKey subjectPublicKey, X500Name issuerName, X500Name subjectName) throws OperatorCreationException {
 		X509v3CertificateBuilder certGen = new JcaX509v3CertificateBuilder(
 				issuerName,
 				BigInteger.valueOf(1),
@@ -100,13 +104,13 @@ public class CertificateUtils {
 	/**
 	 * Generates an X500 formatted name for use in X509CertificateHolder's
 	 *
-	 * @param countryCode
-	 * @param organisation
-	 * @param organisationalUnit
-	 * @param email
-	 * @return the X500Name
+	 * @param countryCode the country the certificate owner is located in
+	 * @param organisation the organisation the certificate owner belongs to
+	 * @param organisationalUnit organisational unit within an institutional hierarchy
+	 * @param email email address of certificate owner
+	 * @return the X500Name for the certificate owner
 	 */
-	public static X500Name getX500Name(String countryCode, String organisation, String organisationalUnit, String email) {
+	public static X500Name generateX500Name(String countryCode, String organisation, String organisationalUnit, String email) {
 		X500NameBuilder nameBuilder = new X500NameBuilder();
 		
 		nameBuilder.addRDN(BCStyle.C, countryCode);
@@ -121,7 +125,6 @@ public class CertificateUtils {
 	 * Generate a Public/Private Key Pair using RSA4096
 	 *
 	 * @return the KeyPair
-	 * @throws NoSuchAlgorithmException
 	 */
 	public static KeyPair generateKeyPair() throws NoSuchAlgorithmException {
 		System.out.println("Generating key pair using RSA4096...");
@@ -137,12 +140,6 @@ public class CertificateUtils {
 	 *
 	 * @param username the username of the client
 	 * @param password the client's password
-	 * @throws UnrecoverableKeyException
-	 * @throws CertificateException
-	 * @throws NoSuchAlgorithmException
-	 * @throws KeyStoreException
-	 * @throws IOException
-	 * @throws OperatorCreationException
 	 */
 	public static void generateClientCert(String username, String password) throws UnrecoverableKeyException, CertificateException, NoSuchAlgorithmException, KeyStoreException, IOException, OperatorCreationException {
 		CertificateAuthority ca = new CertificateAuthority();

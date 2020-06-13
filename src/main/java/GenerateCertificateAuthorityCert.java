@@ -23,8 +23,8 @@ public class GenerateCertificateAuthorityCert {
 		KeyPair kp = CertificateUtils.generateKeyPair();
 		
 		System.out.println("creating signed certificate");
-		X500Name name = CertificateUtils.getX500Name("ZA", "University of Cape Town", "Department of Computer Science", "dept@cs.uct.ac.za");
-		X509CertificateHolder certHolder = CertificateUtils.getX509CertificateHolder(kp.getPrivate(), kp.getPublic(), name, name);
+		X500Name name = CertificateUtils.generateX500Name("ZA", "University of Cape Town", "Department of Computer Science", "dept@cs.uct.ac.za");
+		X509CertificateHolder certHolder = CertificateUtils.generateX509CertificateHolder(kp.getPrivate(), kp.getPublic(), name, name);
 
 		System.out.println("saving certificate to file");
 		CertificateUtils.saveCertToDER(certHolder, "uct.der");
