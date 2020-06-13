@@ -14,6 +14,11 @@ import java.security.cert.Certificate;
 import java.util.Scanner;
 import java.util.zip.DataFormatException;
 
+/**
+ * Tests sending messages with forged signatures (signatures generated with a different private key to the user)
+ * Use this "fake messenger" to connect to a client that is using the real messenger
+ * The real messenger app should detect and reject the forged signature
+ */
 public class TestSendForgedMessage {
 	private static int SERVER_PORT = 9000;
 	private static String MACHINE_NAME = "localhost";

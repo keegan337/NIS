@@ -14,6 +14,12 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
+/**
+ * Generates and saves a "fake_alice" certificate which has been signed by a fake certificate authority.
+ * This certificate can be used with the messenger app to test certificate verification
+ * An attacker can use this certificate to attempt to impersonate alice
+ * The client that the attacker connects to should reject the attacker's certificate
+ */
 public class TestGenerateFakeCertificate {
 
 	private static X509CertificateHolder fakeCaCert;

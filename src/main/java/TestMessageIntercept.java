@@ -14,6 +14,11 @@ import java.security.cert.Certificate;
 import java.util.Scanner;
 import java.util.zip.DataFormatException;
 
+/**
+ * Tests attempting to decrypt a message using a different private key (as an attacker that intercepted a message might)
+ * Use this "fake messenger" to connect to a client that is using the real messenger
+ * When this "fake messenger" receives a message it should fail to decrypt it
+ */
 public class TestMessageIntercept {
 	private static int SERVER_PORT = 9000;
 	private static String MACHINE_NAME = "localhost";
