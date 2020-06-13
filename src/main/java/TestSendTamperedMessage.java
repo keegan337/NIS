@@ -16,6 +16,9 @@ import java.util.zip.DataFormatException;
 
 /**
  * This is a fake client that simulates an attacker tampering with it's messages before they are encrypted.
+ * Tampering with the message after encryption typically results in error's after decryption.
+ * This test simulates the worst case: that an attacker manages to manipulate the encrypted message so that it decrypts to a valid format.
+ * The signature check should then detect that the message has been tampered with.
  * Please send messages with at least 5 characters to avoid errors.
  * See line 151 for changes made.
  * Use this "fake messenger" to connect to a client that is using the real messenger
