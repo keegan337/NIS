@@ -191,7 +191,7 @@ public class Main {
 		}
 		catch (SignatureException e) {
 			System.out.println("Invalid Certificate, closing connection.");
-			networkManager.writeByte(ProtocolUtils.CERT_INVALID_BYTE);
+			networkManager.writeByte(ProtocolUtils.CERT_REJECTED_BYTE);
 			networkManager.close();
 			System.exit(2);
 		}
