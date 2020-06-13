@@ -43,7 +43,8 @@ public class CryptoUtils {
 	}
 
 	/**
-	 * Encrypt the data that is received as a byte array. This involves zipping the data, generating a secret key, encrypting that secret key with the public key, and encrypting the seperate data with the secret key. Both of these encrypted data objects are then concatenated.
+	 * Encrypt the data that is received as a byte array. This involves zipping the data, generating a secret key, encrypting that secret key with the public key,
+	 * and encrypting the seperate data with the secret key. Both of these encrypted data objects are then concatenated.
 	 *
 	 * @param data received after data is signed
 	 * @param publicKey the public key of the receiver
@@ -189,7 +190,6 @@ public class CryptoUtils {
 			throw new InvalidSignatureException();
 		}
 	}
-
 
 	/**
 	 * Compresses data with a zip algorithm at a specified strength

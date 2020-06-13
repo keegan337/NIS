@@ -189,11 +189,11 @@ public class TestSendForgedMessage {
 		try {
 			cert.verify(caCertificate.getPublicKey());
 			System.out.println("Certificate validated successfully");
-			networkManager.writeByte(ProtocolUtils.CERT_VALID_BYTE);
+			networkManager.writeByte(ProtocolUtils.CERT_ACCEPTED_BYTE);
 		}
 		catch (SignatureException e) {
 			System.out.println("Invalid Certificate, closing connection.");
-			networkManager.writeByte(ProtocolUtils.CERT_INVALID_BYTE);
+			networkManager.writeByte(ProtocolUtils.CERT_REJECTED_BYTE);
 			networkManager.close();
 			System.exit(2);
 		}
@@ -227,10 +227,10 @@ public class TestSendForgedMessage {
 		System.out.println("certificate sent");
 		byte b = networkManager.readByte();
 		switch (b) {
-			case ProtocolUtils.CERT_VALID_BYTE:
+			case ProtocolUtils.CERT_ACCEPTED_BYTE:
 				System.out.println("our certificate was accepted");
 				break;
-			case ProtocolUtils.CERT_INVALID_BYTE:
+			case ProtocolUtils.CERT_REJECTED_BYTE:
 				System.out.println("our certificate was rejected");
 				networkManager.close();
 				System.exit(2);
