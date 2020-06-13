@@ -44,5 +44,6 @@ public class TestGenerateFakeCertificate {
 		X509Certificate clientCert = converter.getCertificate(certHolder);
 		Certificate[] certChain = new Certificate[]{clientCert, caCert};
 		CertificateUtils.saveToPKCS12(fakeAliceKP, certHolder, certChain, "fake_alice", "123", "fake_alice.p12", "123");
+		CertificateUtils.saveCertToDER(certHolder, "fake_alice.der");
 	}
 }
